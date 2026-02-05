@@ -1,3 +1,6 @@
+# Log Analyzer Architecture
+
+```mermaid
 flowchart LR
   U[User / UI] -->|Upload| IN[Ingestion Service]
   IN -->|Parse Normalize| LR1[Log Reader / Unzipper]
@@ -47,3 +50,4 @@ flowchart LR
   PB --> T
   INF --> T
   VAL --> T
+```

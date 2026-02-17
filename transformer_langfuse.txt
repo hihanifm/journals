@@ -1,0 +1,79 @@
+ Yes, you can load models directly using the Transformers library within your Langfuse experiment task function. The task function is completely flexible—you can use any Python code you want[(1)](https://langfuse.com/docs/evaluation/experiments/experiments-via-sdk).
+
+Here's an example:
+
+```python
+from langfuse import get_client
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+
+langfuse = get_client()
+
+# Load model and tokenizer once (outside task function for efficiency)
+model_name = "meta-llama/Llama-2-7b-chat-hf"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    torch_dtype=torch.float16,
+    device_map="auto"
+)
+
+def transformers_task(*, item, **kwargs):
+    question = item["input"]
+    
+    # Tokenize and generate
+    inputs = tokenizer(question, return_tensors="pt").to(model.device)
+    outputs = model.generate(**inputs, max_new_tokens=256)
+    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    
+    return response
+
+# Run experiment
+result = langfuse.run_experiment(
+    name="Transformers Direct Load",
+    data=test_data,
+    task=transformers_task,
+    max_concurrency=1  # Process one at a time to manage GPU memory
+)
+
+print(result.format())
+```
+[(1)](https://langfuse.com/docs/evaluation/experiments/experiments-via-sdk)
+
+For testing multiple models sequentially:
+
+```python
+models_to_test = [
+    "meta-llama/Llama-2-7b-chat-hf",
+    "mistralai/Mistral-7B-Instruct-v0.2"
+]
+
+for model_name in models_to_test:
+    # Load model
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        torch_dtype=torch.float16,
+        device_map="auto"
+    )
+    
+    def create_task(tok, mdl):
+        def task(*, item, **kwargs):
+            inputs = tok(item["input"], return_tensors="pt").to(mdl.device)
+            outputs = mdl.generate(**inputs, max_new_tokens=256)
+            return tok.decode(outputs[0], skip_special_tokens=True)
+        return task
+    
+    result = langfuse.run_experiment(
+        name=f"Experiment - {model_name}",
+        data=test_data,
+        task=create_task(tokenizer, model)
+    )
+    
+    # Clear GPU memory between models
+    del model, tokenizer
+    torch.cuda.empty_cache()
+```
+[(1)](https://langfuse.com/docs/evaluation/experiments/experiments-via-sdk)
+
+This gives you complete control over model loading and inference while still benefiting from Langfuse's tracing, evaluation, and comparison features[(1)](https://langfuse.com/docs/evaluation/experiments/experiments-via-sdk).

@@ -1,0 +1,68 @@
+Yes, here's an example using vLLM's Python library within a Langfuse experiment task function:
+
+from langfuse import get_client
+from vllm import LLM, SamplingParams
+
+langfuse = get_client()
+
+# Initialize vLLM model once (outside task function)
+llm = LLM(
+    model="meta-llama/Llama-2-7b-chat-hf",
+    tensor_parallel_size=1,  # Set based on your GPU count
+    gpu_memory_utilization=0.9
+)
+
+sampling_params = SamplingParams(
+    temperature=0.7,
+    top_p=0.95,
+    max_tokens=256
+)
+
+def vllm_task(*, item, **kwargs):
+    question = item["input"]
+    
+    # Generate using vLLM
+    outputs = llm.generate([question], sampling_params)
+    response = outputs[0].outputs[0].text
+    
+    return response
+
+# Run experiment
+result = langfuse.run_experiment(
+    name="vLLM Experiment",
+    data=test_data,
+    task=vllm_task,
+    max_concurrency=1
+)
+
+print(result.format())
+
+
+For testing multiple models sequentially with vLLM:
+
+models_to_test = [
+    "meta-llama/Llama-2-7b-chat-hf",
+    "mistralai/Mistral-7B-Instruct-v0.2"
+]
+
+for model_name in models_to_test:
+    # Initialize vLLM for this model
+    llm = LLM(model=model_name, gpu_memory_utilization=0.9)
+    
+    def create_vllm_task(vllm_instance):
+        def task(*, item, **kwargs):
+            outputs = vllm_instance.generate(
+                [item["input"]], 
+                SamplingParams(temperature=0.7, max_tokens=256)
+            )
+            return outputs[0].outputs[0].text
+        return task
+    
+    result = langfuse.run_experiment(
+        name=f"vLLM - {model_name}",
+        data=test_data,
+        task=create_vllm_task(llm)
+    )
+    
+    # Clean up before loading next model
+    del llm

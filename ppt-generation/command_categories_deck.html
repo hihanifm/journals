@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Command Categories — deck.js</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/deck.js/1.1.0/core/deck.core.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/deck.js/1.1.0/themes/style/swiss.min.css">
+  <style>
+    .slide h2 { margin-bottom: 0.5rem; }
+    .slide code { background: #eee; color: #333; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="deck-container">
+    <section class="slide">
+      <h1>Command Categories</h1>
+      <h2>Quick Reference</h2>
+      <p>Browser automation & testing commands</p>
+    </section>
+
+    <section class="slide">
+      <h2>Navigation (6)</h2>
+      <p><code>open</code> <code>back</code> <code>forward</code> <code>reload</code> <code>close</code> <code>connect</code></p>
+    </section>
+
+    <section class="slide">
+      <h2>Interaction (17)</h2>
+      <p><code>click</code> <code>dblclick</code> <code>focus</code> <code>fill</code> <code>type</code> <code>press</code> <code>select</code> <code>check</code> <code>uncheck</code> <code>hover</code> <code>drag</code> <code>scroll</code></p>
+    </section>
+
+    <section class="slide">
+      <h2>Inspection (8)</h2>
+      <p><code>get text</code> <code>get html</code> <code>get value</code> <code>get attr</code> <code>get title</code> <code>get url</code> <code>get count</code> <code>get box</code> <code>get styles</code></p>
+    </section>
+
+    <section class="slide">
+      <h2>State Checks (3)</h2>
+      <p><code>is visible</code> <code>is enabled</code> <code>is checked</code></p>
+    </section>
+
+    <section class="slide">
+      <h2>Screenshots & PDF (4)</h2>
+      <p><code>screenshot</code> <code>screenshot --full</code> <code>screenshot --element</code> <code>pdf</code></p>
+    </section>
+
+    <section class="slide">
+      <h2>Video Recording (3)</h2>
+      <p><code>record start</code> <code>record stop</code> <code>record restart</code></p>
+    </section>
+
+    <section class="slide">
+      <h2>Wait / Timing (5)</h2>
+      <p><code>wait for</code> <code>wait milliseconds</code> <code>wait for text</code> <code>wait for url</code> <code>wait for load</code></p>
+    </section>
+
+    <section class="slide">
+      <h2>Mouse Control (4)</h2>
+      <p><code>mouse move</code> <code>mouse down</code> <code>mouse up</code> <code>mouse wheel</code></p>
+    </section>
+
+    <section class="slide">
+      <h2>Semantic Locators (11)</h2>
+      <p><code>find by role</code> <code>find by text</code> <code>find by label</code> <code>find by placeholder</code> <code>find by alt</code> <code>find by title</code> <code>find by testid</code> <code>first</code> <code>last</code> <code>nth</code></p>
+    </section>
+
+    <section class="slide">
+      <h2>Browser Settings (8)</h2>
+      <p><code>set viewport</code> <code>set device</code> <code>set geo</code> <code>set offline</code> <code>set headers</code> <code>set credentials</code> <code>set media</code></p>
+    </section>
+
+    <section class="slide">
+      <h2>Cookies & Storage (7)</h2>
+      <p><code>get cookies</code> <code>set cookies</code> <code>delete cookies</code> <code>get storage</code> <code>set storage</code> <code>clear storage</code></p>
+    </section>
+
+    <section class="slide">
+      <h2>Network (6)</h2>
+      <p><code>route</code> <code>unroute</code> <code>network requests</code> <code>network --filter</code> <code>abort</code> <code>fulfill</code></p>
+    </section>
+
+    <section class="slide">
+      <h2>Tabs & Windows (6)</h2>
+      <p><code>new tab</code> <code>switch tab</code> <code>close tab</code> <code>new window</code> <code>switch window</code> <code>close window</code></p>
+    </section>
+
+    <section class="slide">
+      <h2>Frames (2)</h2>
+      <p><code>frame switch</code> <code>frame main</code></p>
+    </section>
+
+    <section class="slide">
+      <h2>Dialogs & JS (3)</h2>
+      <p><code>dialog accept</code> <code>dialog dismiss</code> <code>eval</code></p>
+    </section>
+
+    <section class="slide">
+      <h1>Thank you</h1>
+    </section>
+
+    <a href="#" class="deck-prev-link" title="Previous">&#8592;</a>
+    <a href="#" class="deck-next-link" title="Next">&#8594;</a>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/deck.js/1.1.0/core/deck.core.min.js"></script>
+  <script>
+    $(function() { $.deck('.slide'); });
+  </script>
+</body>
+</html>

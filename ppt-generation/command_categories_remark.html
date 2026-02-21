@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Command Categories — remark</title>
+  <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+  <style>
+    @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+    @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+    @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+    body { font-family: 'Droid Serif'; }
+    h1, h2, h3 { font-family: 'Yanone Kaffeesatz'; font-weight: normal; }
+    .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+  </style>
+</head>
+<body>
+  <textarea id="source">
+# Command Categories
+## Quick Reference
+Browser automation & testing commands
+
+---
+# Navigation (6)
+`open` `back` `forward` `reload` `close` `connect`
+
+---
+# Interaction (17)
+`click` `dblclick` `focus` `fill` `type` `press` `select` `check` `uncheck` `hover` `drag` `scroll`
+
+---
+# Inspection (8)
+`get text` `get html` `get value` `get attr` `get title` `get url` `get count` `get box` `get styles`
+
+---
+# State Checks (3)
+`is visible` `is enabled` `is checked`
+
+---
+# Screenshots & PDF (4)
+`screenshot` `screenshot --full` `screenshot --element` `pdf`
+
+---
+# Video Recording (3)
+`record start` `record stop` `record restart`
+
+---
+# Wait / Timing (5)
+`wait for` `wait milliseconds` `wait for text` `wait for url` `wait for load`
+
+---
+# Mouse Control (4)
+`mouse move` `mouse down` `mouse up` `mouse wheel`
+
+---
+# Semantic Locators (11)
+`find by role` `find by text` `find by label` `find by placeholder` `find by alt` `find by title` `find by testid` `first` `last` `nth`
+
+---
+# Browser Settings (8)
+`set viewport` `set device` `set geo` `set offline` `set headers` `set credentials` `set media`
+
+---
+# Cookies & Storage (7)
+`get cookies` `set cookies` `delete cookies` `get storage` `set storage` `clear storage`
+
+---
+# Network (6)
+`route` `unroute` `network requests` `network --filter` `abort` `fulfill`
+
+---
+# Tabs & Windows (6)
+`new tab` `switch tab` `close tab` `new window` `switch window` `close window`
+
+---
+# Frames (2)
+`frame switch` `frame main`
+
+---
+# Dialogs & JS (3)
+`dialog accept` `dialog dismiss` `eval`
+
+---
+# Thank you
+  </textarea>
+
+  <script>
+    var slideshow = remark.create({
+      ratio: '16:9',
+      highlightStyle: 'monokai'
+    });
+  </script>
+</body>
+</html>

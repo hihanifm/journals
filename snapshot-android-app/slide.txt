@@ -1,0 +1,6 @@
+Slide Title: Eliminating Friction with AI-Driven Automation
+
+The Challenge: Manual screenshots (200+ per engineer) across multiple categories—tedious, slow, frustrating.
+Our AI Solution: A custom app—category selection, one-tap capture, auto-packaging, zero hassle.
+Impact: Submission rates soared. Engineers spent less time on friction—more on innovation.
+Why It Matters: This showcases how AI—and rapid coding—can swiftly eliminate legacy inefficiencies!

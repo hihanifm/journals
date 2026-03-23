@@ -1,0 +1,6 @@
+Slide Title: Democratizing Feedback—Our Rapid Portal Build
+
+The Gap: Annual feedback cycles left employees waiting, reducing engagement.
+The Solution: Using rapid coding, we built a JavaScript-powered web portal, frontend to backend, with an SQLite database.
+Impact: Instant feedback loops empowered teams, fostering a culture of continuous improvement.
+Takeaway: Even without prior expertise, rapid coding let us architect a robust, practical platform—fast!

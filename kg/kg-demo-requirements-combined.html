@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Requirements Doc → Knowledge Graph: Live Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,700;0,900;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b0f;
+    --surface: #0f1520;
+    --surface2: #141c2e;
+    --amber: #f5a623;
+    --amber-dim: #c47d10;
+    --teal: #2dd4bf;
+    --green: #4ade80;
+    --purple: #a78bfa;
+    --red: #f87171;
+    --blue: #60a5fa;
+    --muted: #4a5568;
+    --text: #e2e8f0;
+    --text-dim: #718096;
+    --line: rgba(245,166,35,0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; overflow: hidden; height: 100vh; width: 100vw; }
+
+  .grid-bg { position: fixed; inset: 0; background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .vignette { position: fixed; inset: 0; background: radial-gradient(ellipse at center, transparent 40%, var(--bg) 100%); pointer-events: none; z-index: 1; }
+
+  .progress-bar { position: fixed; top: 0; left: 0; height: 2px; background: var(--teal); transition: width 0.4s ease; z-index: 200; }
+  .key-hint { position: fixed; top: 1.5rem; right: 2rem; font-size: 0.8125rem; color: var(--muted); z-index: 100; letter-spacing: 0.1em; }
+  .demo-badge { position: fixed; top: 1.5rem; left: 2rem; font-size: 0.8125rem; color: var(--teal); z-index: 100; letter-spacing: 0.1em; border: 1px solid rgba(45,212,191,0.4); padding: 0.2rem 0.6rem; border-radius: 3px; }
+
+  .nav { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 1rem; z-index: 100; background: rgba(15,21,32,0.92); border: 1px solid var(--line); padding: 0.6rem 1.2rem; border-radius: 999px; backdrop-filter: blur(12px); }
+  .nav button { background: none; border: none; color: var(--teal); cursor: pointer; font-size: 1.375rem; padding: 0.2rem 0.6rem; transition: opacity 0.2s; font-family: 'DM Mono', monospace; }
+  .nav button:hover { opacity: 0.7; }
+  .nav button:disabled { opacity: 0.2; cursor: default; }
+  .slide-counter { color: var(--text-dim); font-size: 0.9375rem; min-width: 60px; text-align: center; }
+  .nav-dots { display: flex; gap: 6px; align-items: center; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); cursor: pointer; transition: all 0.3s; }
+  .dot.active { background: var(--teal); width: 18px; border-radius: 3px; }
+
+  /* SLIDES */
+  .slides-wrapper { width: 100vw; height: 100vh; position: relative; }
+  .slide { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3rem 5rem; opacity: 0; pointer-events: none; transition: opacity 0.5s ease, transform 0.5s ease; transform: translateY(20px); z-index: 2; }
+  .slide.active { opacity: 1; pointer-events: all; transform: translateY(0); }
+  .slide.exit { opacity: 0; transform: translateY(-20px); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .slide.active > * { animation: fadeUp 0.5s ease both; }
+  .slide.active > *:nth-child(1) { animation-delay: 0.05s; }
+  .slide.active > *:nth-child(2) { animation-delay: 0.15s; }
+  .slide.active > *:nth-child(3) { animation-delay: 0.25s; }
+  .slide.active > *:nth-child(4) { animation-delay: 0.35s; }
+  .slide.active > *:nth-child(5) { animation-delay: 0.45s; }
+  .slide.active > *:nth-child(6) { animation-delay: 0.55s; }
+
+  /* TYPE */
+  .label { font-size: 0.875rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--teal); margin-bottom: 1.2rem; opacity: 0.9; }
+  h1 { font-family: 'Fraunces', serif; font-size: clamp(2.5rem, 5vw, 5rem); font-weight: 900; line-height: 1.05; text-align: center; }
+  h1 em { font-style: italic; color: var(--teal); }
+  h2 { font-family: 'Fraunces', serif; font-size: clamp(1.75rem, 3vw, 2.75rem); font-weight: 700; line-height: 1.2; text-align: center; margin-bottom: 0.8rem; }
+  h2 em { font-style: italic; color: var(--teal); }
+  .teal-line { width: 60px; height: 2px; background: var(--teal); margin: 1.2rem auto; }
+  .subtitle { color: var(--text-dim); font-size: clamp(0.975rem, 1.3vw, 1.125rem); text-align: center; max-width: 620px; line-height: 1.7; margin-top: 1rem; }
+
+  /* DOC SNIPPET */
+  .doc-box { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--teal); padding: 1.2rem 1.6rem; max-width: 820px; width: 100%; font-size: 0.875rem; line-height: 1.9; border-radius: 3px; margin-top: 1.2rem; position: relative; }
+  .doc-box::before { content: 'SOURCE: VZ_REQ_LTESMS — REQUIREMENTS DOCUMENT'; position: absolute; top: -0.6rem; left: 1rem; font-size: 0.6875rem; letter-spacing: 0.15em; color: var(--teal); background: var(--bg); padding: 0 0.4rem; }
+  .doc-box .e { color: var(--amber); font-weight: 500; }
+  .doc-box .r { color: var(--teal); }
+  .doc-box .v { color: var(--green); }
+  .doc-box .req { color: var(--purple); font-size: 0.75rem; opacity: 0.7; }
+  .doc-box .dim { color: var(--text-dim); }
+
+  /* DIFF PANEL: req vs test plan */
+  .diff-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; width: 100%; max-width: 900px; margin-top: 1.2rem; }
+  .diff-col { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 1.2rem; }
+  .diff-col h4 { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.8rem; }
+  .diff-col.req-doc h4 { color: var(--teal); }
+  .diff-col.test-doc h4 { color: var(--amber); }
+  .diff-col p { font-size: 0.875rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 0.6rem; }
+  .diff-col ul { list-style: none; padding: 0; }
+  .diff-col ul li { font-size: 0.85rem; color: var(--text-dim); line-height: 1.9; padding-left: 1rem; position: relative; }
+  .diff-col.req-doc ul li::before { content: '◆'; color: var(--teal); position: absolute; left: 0; font-size: 0.625rem; top: 0.25rem; }
+  .diff-col.test-doc ul li::before { content: '◆'; color: var(--amber); position: absolute; left: 0; font-size: 0.625rem; top: 0.25rem; }
+
+  /* ENTITY GRID */
+  .entity-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.8rem; width: 100%; max-width: 920px; margin-top: 1.2rem; }
+  .ec { background: var(--surface); border: 1px solid var(--line); padding: 0.9rem 0.8rem; border-radius: 4px; position: relative; overflow: hidden; }
+  .ec::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; }
+  .ec.req::before { background: var(--teal); }
+  .ec.device::before { background: var(--purple); }
+  .ec.protocol::before { background: var(--amber); }
+  .ec.network::before { background: var(--blue); }
+  .ec-type { font-size: 0.6875rem; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.4rem; }
+  .req .ec-type { color: var(--teal); }
+  .device .ec-type { color: var(--purple); }
+  .protocol .ec-type { color: var(--amber); }
+  .network .ec-type { color: var(--blue); }
+  .ec-name { font-family: 'Fraunces', serif; font-size: 1.062rem; font-weight: 700; color: var(--text); margin-bottom: 0.3rem; }
+  .ec-attrs { font-size: 0.75rem; color: var(--text-dim); line-height: 1.6; }
+
+  /* TRIPLE TABLE */
+  .triple-table { width: 100%; max-width: 820px; margin-top: 1.2rem; border-collapse: collapse; font-size: 0.875rem; }
+  .triple-table th { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--teal); padding: 0.5rem 1rem; text-align: left; border-bottom: 1px solid var(--line); }
+  .triple-table td { padding: 0.55rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .triple-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .s { color: var(--amber); }
+  .p { color: var(--teal); }
+  .o { color: var(--purple); }
+  .src { color: var(--text-dim); font-size: 0.75rem; }
+
+  /* GRAPH */
+  .graph-wrap { width: 100%; max-width: 880px; margin-top: 1.2rem; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 0.5rem; position: relative; }
+  .graph-wrap::before { content: 'KNOWLEDGE GRAPH — VZ_REQ_LTESMS REQUIREMENTS DOCUMENT'; position: absolute; top: -0.6rem; left: 1rem; font-size: 0.6875rem; letter-spacing: 0.12em; color: var(--teal); background: var(--bg); padding: 0 0.4rem; }
+
+  /* COMBINED GRAPH POWER SLIDE */
+  .power-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; width: 100%; max-width: 920px; margin-top: 1.2rem; }
+  .power-card { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 1.2rem; }
+  .power-card h4 { font-family: 'Fraunces', serif; font-size: 1.125rem; margin-bottom: 0.6rem; }
+  .power-card.r h4 { color: var(--teal); }
+  .power-card.t h4 { color: var(--amber); }
+  .power-card.combined h4 { color: var(--green); }
+  .power-card ul { list-style: none; }
+  .power-card ul li { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.9; padding-left: 1rem; position: relative; }
+  .power-card.r ul li::before { content: '→'; color: var(--teal); position: absolute; left: 0; }
+  .power-card.t ul li::before { content: '→'; color: var(--amber); position: absolute; left: 0; }
+  .power-card.combined ul li::before { content: '→'; color: var(--green); position: absolute; left: 0; }
+
+  /* QUERY BLOCK */
+  .query-block { width: 100%; max-width: 820px; margin-top: 1.2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .qp { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 1.2rem; font-size: 0.875rem; }
+  .qp h4 { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.8rem; }
+  .qp.bad h4 { color: var(--red); }
+  .qp.good h4 { color: var(--green); }
+  .q-q { font-family: 'Fraunces', serif; font-style: italic; font-size: 1.062rem; color: var(--text); margin-bottom: 0.8rem; line-height: 1.4; }
+  .q-r { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.9; }
+  .q-r .hit { color: var(--green); }
+  .q-r .miss { color: var(--red); opacity: 0.7; }
+  .q-r .chain { color: var(--teal); }
+
+  /* CLOSING */
+  .close-stats { display: flex; gap: 3rem; margin-top: 2rem; }
+  .cs { text-align: center; }
+  .cs-num { font-family: 'Fraunces', serif; font-size: 3.5rem; font-weight: 900; line-height: 1; }
+  .cs-num.t { color: var(--teal); }
+  .cs-num.a { color: var(--amber); }
+  .cs-num.g { color: var(--green); }
+  .cs-label { font-size: 0.8125rem; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.3rem; }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="vignette"></div>
+<div class="progress-bar" id="progress"></div>
+<div class="key-hint">← → to navigate</div>
+<div class="demo-badge">LIVE DEMO — REQUIREMENTS DOC</div>
+
+<div class="slides-wrapper" id="slides">
+
+  <!-- S0: TITLE -->
+  <div class="slide active" id="s0">
+    <div class="label">Knowledge Graph — Live Demo #2</div>
+    <h1>From <em>Requirements</em><br>to Knowledge Graph</h1>
+    <div class="teal-line"></div>
+    <p class="subtitle">Using the Verizon Wireless LTE SMS Requirements document — a different document type from the test plan, but even richer for knowledge graph construction.</p>
+    <div style="margin-top:2rem; background: var(--surface); border:1px solid var(--line); padding: 0.8rem 1.4rem; border-radius:4px; font-size: 0.875rem; color: var(--text-dim);">
+      <span style="color:var(--teal);">SOURCE:</span> &nbsp; VZ LTE SMS Requirements (VZ_REQ_LTESMS) · Version 20 · February 2026 · 52 pages · 70+ individual requirements
+    </div>
+  </div>
+
+  <!-- S1: WHAT KIND OF DOC IS THIS -->
+  <div class="slide" id="s1">
+    <div class="label">Step 01 — Two Different Documents, One Graph</div>
+    <h2>Requirements vs Test Plan — <em>both needed</em></h2>
+    <div class="diff-row">
+      <div class="diff-col req-doc">
+        <h4>This Document — Requirements (LTESMS REQ)</h4>
+        <p>Defines <strong style="color:var(--teal);">what</strong> the device must do. Each requirement is a mandatory obligation. Written in "shall / should / may" language.</p>
+        <ul>
+          <li>Device shall support SMS over IMS</li>
+          <li>Device shall retry MO SMS after 30 seconds</li>
+          <li>Device shall support 3GPP and 3GPP2 formats</li>
+          <li>Device shall support Text-to-988 (FCC mandate)</li>
+          <li>Device shall support GSM-7bit and UCS-2 encodings</li>
+          <li>Device shall send SIP 200 OK on MT SMS receipt</li>
+        </ul>
+      </div>
+      <div class="diff-col test-doc">
+        <h4>Previous Document — Test Plan (LTESMS TC)</h4>
+        <p>Defines <strong style="color:var(--amber);">how</strong> to verify those requirements. Each test case maps to one or more requirements and has procedures + expected results.</p>
+        <ul>
+          <li>TC-6306: verifies MT SMS over IMS</li>
+          <li>TC-6323: verifies SIP retry timer behavior</li>
+          <li>TC-6363: verifies GSM-7bit encoding</li>
+          <li>TC-7349: verifies Text-to-988 capability</li>
+          <li>TC-6306 → maps to REQ-29575, REQ-29578</li>
+          <li>Together they form a complete traceability chain</li>
+        </ul>
+      </div>
+    </div>
+    <p class="subtitle">A knowledge graph can hold <em>both</em> — linking requirements to tests to outcomes in a single queryable structure.</p>
+  </div>
+
+  <!-- S2: RAW DOCUMENT SNIPPET -->
+  <div class="slide" id="s2">
+    <div class="label">Step 02 — The Raw Requirements Text</div>
+    <h2>What the document <em>actually says</em></h2>
+    <div class="doc-box">
+      <span class="dim">REQ VZ_REQ_LTESMS_29549 — Retry Mechanism (Initial Attempt)</span><br>
+      The <span class="e">device</span> makes an initial attempt to send the <span class="e">MO SMS</span>. The initial attempt is considered to have failed when the <span class="e">SIP timer</span> (<span class="v">Timer F</span>) expires.<br><br>
+      <span class="dim">REQ VZ_REQ_LTESMS_29550 — Retry Mechanism (Second Attempt)</span><br>
+      The <span class="e">device</span> <span class="r">shall support</span> a retry mechanism where it waits <span class="v">30 seconds</span> and then performs a second attempt to send the <span class="e">MO SMS</span>.<br><br>
+      <span class="dim">REQ VZ_REQ_LTESMS_29551 — TP-MR Preservation</span><br>
+      If the <span class="e">MO SMS</span> is in <span class="e">3GPP format</span>, the <span class="e">device</span> <span class="r">shall</span> in the second attempt use the same <span class="e">TP-Message-Reference (TP-MR)</span> as in the initial attempt.<br><br>
+      <span class="dim">REQ VZ_REQ_LTESMS_4105999311951475 — Text-to-988 (FCC Mandate)</span><br>
+      The <span class="e">device</span> <span class="r">shall</span> be able to send/receive <span class="e">SMS</span> to/from <span class="e">988 (Suicide Prevention Lifeline)</span> over <span class="e">IMS</span>. This is a mandatory requirement by <span class="v">FCC-21-119</span>.
+    </div>
+    <p class="subtitle">Every sentence is a potential triple. Every "shall" is a directed relationship waiting to be mapped.</p>
+  </div>
+
+  <!-- S3: ENTITIES EXTRACTED -->
+  <div class="slide" id="s3">
+    <div class="label">Step 03 — Entities Extracted</div>
+    <h2>Who and what does this <em>requirements doc</em> contain?</h2>
+    <div class="entity-grid">
+      <div class="ec req">
+        <div class="ec-type">Requirement</div>
+        <div class="ec-name">REQ-29550</div>
+        <div class="ec-attrs">MO SMS Retry<br>Obligation: SHALL<br>Wait: 30 seconds</div>
+      </div>
+      <div class="ec req">
+        <div class="ec-type">Requirement</div>
+        <div class="ec-name">REQ-29575</div>
+        <div class="ec-attrs">SMS over IMS Overview<br>Trigger: Power-up<br>Prerequisite: IMS Reg</div>
+      </div>
+      <div class="ec req">
+        <div class="ec-type">Mandate</div>
+        <div class="ec-name">FCC-21-119</div>
+        <div class="ec-attrs">Text-to-988<br>Authority: FCC<br>Status: Mandatory</div>
+      </div>
+      <div class="ec device">
+        <div class="ec-type">Device Component</div>
+        <div class="ec-name">UICC/USIM</div>
+        <div class="ec-attrs">Identity module<br>Hosts: ISIM + USIM<br>Stores: SMS (optional)</div>
+      </div>
+      <div class="ec protocol">
+        <div class="ec-type">Service</div>
+        <div class="ec-name">MO SMS</div>
+        <div class="ec-attrs">Mobile Originated<br>Format: 3GPP / 3GPP2<br>Transport: SIP MESSAGE</div>
+      </div>
+      <div class="ec protocol">
+        <div class="ec-type">Service</div>
+        <div class="ec-name">MT SMS</div>
+        <div class="ec-attrs">Mobile Terminated<br>Response: SIP 200 OK<br>+ Delivery Report</div>
+      </div>
+      <div class="ec protocol">
+        <div class="ec-type">Parameter</div>
+        <div class="ec-name">smsformat</div>
+        <div class="ec-attrs">Configurable param<br>Values: 3gpp / 3gpp2<br>Persistent: yes</div>
+      </div>
+      <div class="ec network">
+        <div class="ec-type">SMS Path</div>
+        <div class="ec-name">SMS over NAS</div>
+        <div class="ec-attrs">Non-IMS path<br>For: Cat 1/0 devices<br>Use: outbound roaming</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S4: TRIPLE TABLE -->
+  <div class="slide" id="s4">
+    <div class="label">Step 04 — Requirements as Triples</div>
+    <h2>"Shall" becomes a <em>directed edge</em></h2>
+    <table class="triple-table">
+      <thead>
+        <tr><th>Subject</th><th>Predicate</th><th>Object</th><th>Requirement ID</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="s">LTE Device</td><td class="p">SHALL_SUPPORT</td><td class="o">SMS over IMS</td><td class="src">REQ-29575</td></tr>
+        <tr><td class="s">LTE Device</td><td class="p">SHALL_RETRY_AFTER</td><td class="o">30 seconds</td><td class="src">REQ-29550</td></tr>
+        <tr><td class="s">LTE Device</td><td class="p">SHALL_SUPPORT</td><td class="o">Text-to-988</td><td class="src">REQ-4105999311951475</td></tr>
+        <tr><td class="s">MO SMS (3GPP)</td><td class="p">SHALL_PRESERVE</td><td class="o">TP-MR on retry</td><td class="src">REQ-29551</td></tr>
+        <tr><td class="s">MT SMS</td><td class="p">REQUIRES_RESPONSE</td><td class="o">SIP 200 OK</td><td class="src">REQ-29557</td></tr>
+        <tr><td class="s">smsformat param</td><td class="p">CONTROLS</td><td class="o">MO SMS format</td><td class="src">REQ-29540</td></tr>
+        <tr><td class="s">SMS over IMS</td><td class="p">REQUIRES</td><td class="o">Active IMS registration</td><td class="src">REQ-29555</td></tr>
+        <tr><td class="s">Text-to-988</td><td class="p">MANDATED_BY</td><td class="o">FCC-21-119</td><td class="src">REQ-4105999311951475</td></tr>
+        <tr><td class="s">SMS over NAS</td><td class="p">USED_FOR</td><td class="o">Outbound roaming</td><td class="src">REQ-40091</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- S5: GRAPH VISUALIZATION -->
+  <div class="slide" id="s5">
+    <div class="label">Step 05 — The Requirements Knowledge Graph</div>
+    <h2>Requirements become a <em>navigable network</em></h2>
+    <div class="graph-wrap">
+      <svg viewBox="0 0 840 350" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+        <defs>
+          <marker id="a1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#f5a62370"/></marker>
+          <marker id="a2" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#2dd4bf70"/></marker>
+          <marker id="a3" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#a78bfa70"/></marker>
+          <marker id="a4" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#4ade8070"/></marker>
+          <marker id="a5" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#60a5fa70"/></marker>
+        </defs>
+
+        <!-- EDGES -->
+        <!-- Device → SMS over IMS -->
+        <line x1="160" y1="130" x2="310" y2="90" stroke="#2dd4bf50" stroke-width="1.5" marker-end="url(#a2)"/>
+        <text x="195" y="100" font-family="DM Mono" font-size="9.375" fill="#2dd4bf" opacity="0.85">SHALL_SUPPORT</text>
+
+        <!-- Device → Text-to-988 -->
+        <line x1="155" y1="155" x2="290" y2="245" stroke="#4ade8050" stroke-width="1.5" marker-end="url(#a4)"/>
+        <text x="155" y="215" font-family="DM Mono" font-size="9.375" fill="#4ade80" opacity="0.85">SHALL_SUPPORT</text>
+
+        <!-- Device → SMS over NAS -->
+        <line x1="145" y1="165" x2="95" y2="255" stroke="#60a5fa50" stroke-width="1.5" marker-end="url(#a5)"/>
+        <text x="60" y="217" font-family="DM Mono" font-size="9.375" fill="#60a5fa" opacity="0.85">SHALL_SUPPORT</text>
+
+        <!-- SMS over IMS → IMS Registration -->
+        <line x1="415" y1="88" x2="530" y2="90" stroke="#2dd4bf50" stroke-width="1.5" marker-end="url(#a2)"/>
+        <text x="425" y="79" font-family="DM Mono" font-size="9.375" fill="#2dd4bf" opacity="0.85">REQUIRES</text>
+
+        <!-- SMS over IMS → MO SMS -->
+        <line x1="380" y1="110" x2="380" y2="165" stroke="#f5a62350" stroke-width="1.5" marker-end="url(#a1)"/>
+        <text x="387" y="145" font-family="DM Mono" font-size="9.375" fill="#f5a623" opacity="0.85">INCLUDES</text>
+
+        <!-- SMS over IMS → MT SMS -->
+        <line x1="400" y1="110" x2="545" y2="165" stroke="#f5a62350" stroke-width="1.5" marker-end="url(#a1)"/>
+        <text x="455" y="140" font-family="DM Mono" font-size="9.375" fill="#f5a623" opacity="0.85">INCLUDES</text>
+
+        <!-- MO SMS → Retry Mechanism -->
+        <line x1="365" y1="210" x2="280" y2="275" stroke="#a78bfa50" stroke-width="1.5" marker-end="url(#a3)"/>
+        <text x="285" y="250" font-family="DM Mono" font-size="9.375" fill="#a78bfa" opacity="0.85">HAS_RULE</text>
+
+        <!-- MT SMS → SIP 200 OK -->
+        <line x1="595" y1="210" x2="670" y2="265" stroke="#a78bfa50" stroke-width="1.5" marker-end="url(#a3)"/>
+        <text x="645" y="247" font-family="DM Mono" font-size="9.375" fill="#a78bfa" opacity="0.85">REQUIRES</text>
+
+        <!-- Text-to-988 → FCC-21-119 -->
+        <line x1="390" y1="255" x2="490" y2="300" stroke="#4ade8050" stroke-width="1.5" marker-end="url(#a4)"/>
+        <text x="408" y="295" font-family="DM Mono" font-size="9.375" fill="#4ade80" opacity="0.85">MANDATED_BY</text>
+
+        <!-- smsformat → MO SMS -->
+        <line x1="378" y1="175" x2="375" y2="180" stroke="#f5a62340" stroke-width="0"/><!-- invisible spacing -->
+        <line x1="680" y1="120" x2="430" y2="188" stroke="#f5a62350" stroke-width="1.5" marker-end="url(#a1)"/>
+        <text x="580" y="148" font-family="DM Mono" font-size="9.375" fill="#f5a623" opacity="0.8">CONTROLS</text>
+
+        <!-- NODES -->
+        <!-- LTE Device (center-left) -->
+        <rect x="60" y="118" width="110" height="50" rx="3" fill="#0f1520" stroke="#2dd4bf" stroke-width="2"/>
+        <text x="115" y="139" text-anchor="middle" font-family="DM Mono" font-size="12.5" fill="#2dd4bf" font-weight="500">LTE Device</text>
+        <text x="115" y="155" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">Subject of all reqs</text>
+
+        <!-- SMS over IMS -->
+        <rect x="315" y="68" width="110" height="50" rx="3" fill="#0f1520" stroke="#f5a623" stroke-width="2"/>
+        <text x="370" y="87" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#f5a623" font-weight="500">SMS over IMS</text>
+        <text x="370" y="103" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">Core service</text>
+
+        <!-- IMS Registration -->
+        <rect x="532" y="68" width="130" height="50" rx="3" fill="#0f1520" stroke="#2dd4bf" stroke-width="1.5"/>
+        <text x="597" y="87" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#2dd4bf">IMS Registration</text>
+        <text x="597" y="103" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">Prerequisite</text>
+
+        <!-- MO SMS -->
+        <rect x="333" y="170" width="90" height="48" rx="3" fill="#0f1520" stroke="#f5a623" stroke-width="1.5"/>
+        <text x="378" y="191" text-anchor="middle" font-family="DM Mono" font-size="11.88" fill="#f5a623">MO SMS</text>
+        <text x="378" y="207" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">Outbound</text>
+
+        <!-- MT SMS -->
+        <rect x="545" y="170" width="90" height="48" rx="3" fill="#0f1520" stroke="#f5a623" stroke-width="1.5"/>
+        <text x="590" y="191" text-anchor="middle" font-family="DM Mono" font-size="11.88" fill="#f5a623">MT SMS</text>
+        <text x="590" y="207" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">Inbound</text>
+
+        <!-- Retry Mechanism -->
+        <rect x="218" y="268" width="120" height="48" rx="3" fill="#0f1520" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="278" y="288" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#a78bfa">Retry (30s)</text>
+        <text x="278" y="304" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">REQ-29550</text>
+
+        <!-- SIP 200 OK -->
+        <rect x="645" y="258" width="110" height="48" rx="3" fill="#0f1520" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="700" y="278" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#a78bfa">SIP 200 OK</text>
+        <text x="700" y="294" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">REQ-29557</text>
+
+        <!-- Text-to-988 -->
+        <rect x="300" y="230" width="110" height="48" rx="3" fill="#0f1520" stroke="#4ade80" stroke-width="1.5"/>
+        <text x="355" y="249" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#4ade80">Text-to-988</text>
+        <text x="355" y="265" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">FCC mandate</text>
+
+        <!-- FCC-21-119 -->
+        <rect x="490" y="290" width="110" height="48" rx="3" fill="#0f1520" stroke="#4ade80" stroke-width="1"/>
+        <text x="545" y="310" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#4ade80">FCC-21-119</text>
+        <text x="545" y="326" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">Regulatory body</text>
+
+        <!-- smsformat -->
+        <rect x="660" y="98" width="110" height="48" rx="3" fill="#0f1520" stroke="#f5a623" stroke-width="1"/>
+        <text x="715" y="118" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#f5a623">smsformat</text>
+        <text x="715" y="134" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">3gpp / 3gpp2</text>
+
+        <!-- SMS over NAS -->
+        <rect x="38" y="248" width="110" height="48" rx="3" fill="#0f1520" stroke="#60a5fa" stroke-width="1"/>
+        <text x="93" y="268" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#60a5fa">SMS over NAS</text>
+        <text x="93" y="284" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">Non-IMS path</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- S6: COMBINED POWER -->
+  <div class="slide" id="s6">
+    <div class="label">Step 06 — The Combined Graph Power</div>
+    <h2>Two documents, <em>one unified graph</em></h2>
+    <div class="power-grid">
+      <div class="power-card r">
+        <h4>Requirements Doc</h4>
+        <ul>
+          <li>What device must do (SHALL)</li>
+          <li>Regulatory mandates (FCC)</li>
+          <li>Retry rules and timing</li>
+          <li>Supported formats & encodings</li>
+          <li>Parameter definitions</li>
+          <li>70+ numbered requirements</li>
+        </ul>
+      </div>
+      <div class="power-card t">
+        <h4>Test Plan Doc</h4>
+        <ul>
+          <li>How to verify each requirement</li>
+          <li>Test procedures step-by-step</li>
+          <li>SIP call flows & timers</li>
+          <li>Expected pass/fail criteria</li>
+          <li>Version history of changes</li>
+          <li>25+ active test cases</li>
+        </ul>
+      </div>
+      <div class="power-card combined">
+        <h4>Combined Graph Unlocks</h4>
+        <ul>
+          <li>Req → Test traceability</li>
+          <li>"Which reqs have no test?"</li>
+          <li>"What changed in v25?"</li>
+          <li>FCC mandate → test coverage</li>
+          <li>Retired TCs → gap analysis</li>
+          <li>Full compliance map</li>
+        </ul>
+      </div>
+    </div>
+    <p class="subtitle" style="margin-top:1rem;">This is the kind of query a compliance chatbot can answer instantly — that used to take a team of engineers days.</p>
+  </div>
+
+  <!-- S7: QUERY COMPARISON -->
+  <div class="slide" id="s7">
+    <div class="label">Step 07 — Querying the Combined Graph</div>
+    <h2>Questions that <em>only a graph</em> can answer fast</h2>
+    <div class="query-block">
+      <div class="qp bad">
+        <h4>❌ Without Graph</h4>
+        <div class="q-q">"Is the FCC Text-to-988 mandate covered by our test plan?"</div>
+        <div class="q-r">
+          <span class="miss">Search "FCC" across both documents...</span><br><br>
+          • Found in requirements on page 17<br>
+          • Found as TC 2.25 in test plan p.10<br>
+          • Are they linked? Unknown — must manually verify<br>
+          • Is TC 2.25 still active? Must check revision history<br>
+          • Time to answer: 20–30 minutes
+        </div>
+      </div>
+      <div class="qp good">
+        <h4>✓ With Graph</h4>
+        <div class="q-q">"Is the FCC Text-to-988 mandate covered by our test plan?"</div>
+        <div class="q-r">
+          <span class="hit">Traverses: FCC-21-119 → REQ-4105999311951475 → TC-7349</span><br><br>
+          <span class="chain">→ REQ mandates Text-to-988 over IMS</span><br>
+          <span class="chain">→ TC-7349 verifies this requirement</span><br>
+          <span class="chain">→ TC added in version 20.0 (June 2022)</span><br>
+          <span class="chain">→ TC is ACTIVE in v25 — coverage confirmed ✓</span><br>
+          <span class="hit">Time to answer: &lt;1 second</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S8: WHAT WE GOT -->
+  <div class="slide" id="s8">
+    <div class="label">Step 08 — What We Extracted from 52 Pages</div>
+    <h2>A requirements doc becomes a <em>compliance map</em></h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;width:100%;max-width:880px;margin-top:1.2rem;">
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1.2rem;">
+        <h4 style="font-family:'Fraunces',serif;font-size: 1.125rem;color:var(--teal);margin-bottom:0.7rem;">Entities Extracted</h4>
+        <ul style="list-style:none;">
+          <li style="font-size: 0.85rem;color:var(--text-dim);line-height:1.9;padding-left:1rem;position:relative;"><span style="color:var(--teal);position:absolute;left:0;">→</span>Requirement nodes: 70+ (each with ID, obligation level, version)</li>
+          <li style="font-size: 0.85rem;color:var(--text-dim);line-height:1.9;padding-left:1rem;position:relative;"><span style="color:var(--teal);position:absolute;left:0;">→</span>Services: MO SMS, MT SMS, SMS over IMS, SMS over NAS</li>
+          <li style="font-size: 0.85rem;color:var(--text-dim);line-height:1.9;padding-left:1rem;position:relative;"><span style="color:var(--teal);position:absolute;left:0;">→</span>Device components: UICC, USIM, ISIM, smsformat param</li>
+          <li style="font-size: 0.85rem;color:var(--text-dim);line-height:1.9;padding-left:1rem;position:relative;"><span style="color:var(--teal);position:absolute;left:0;">→</span>Regulatory: FCC-21-119, 3GPP Release 9</li>
+          <li style="font-size: 0.85rem;color:var(--text-dim);line-height:1.9;padding-left:1rem;position:relative;"><span style="color:var(--teal);position:absolute;left:0;">→</span>Encodings: GSM-7bit, UCS-2, ASCII, IA5, Latin ISO-8859</li>
+          <li style="font-size: 0.85rem;color:var(--text-dim);line-height:1.9;padding-left:1rem;position:relative;"><span style="color:var(--teal);position:absolute;left:0;">→</span>Protocols: SIP MESSAGE, 3GPP SMS, 3GPP2 SMS, NAS</li>
+        </ul>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1.2rem;">
+        <h4 style="font-family:'Fraunces',serif;font-size: 1.125rem;color:var(--teal);margin-bottom:0.7rem;">Relationships Mapped</h4>
+        <ul style="list-style:none;">
+          <li style="font-size: 0.85rem;color:var(--text-dim);line-height:1.9;padding-left:1rem;position:relative;"><span style="color:var(--teal);position:absolute;left:0;">→</span>LTE Device SHALL_SUPPORT → 15+ capabilities</li>
+          <li style="font-size: 0.85rem;color:var(--text-dim);line-height:1.9;padding-left:1rem;position:relative;"><span style="color:var(--teal);position:absolute;left:0;">→</span>Text-to-988 MANDATED_BY → FCC-21-119</li>
+          <li style="font-size: 0.85rem;color:var(--text-dim);line-height:1.9;padding-left:1rem;position:relative;"><span style="color:var(--teal);position:absolute;left:0;">→</span>SMS over IMS REQUIRES → Active IMS Registration</li>
+          <li style="font-size: 0.85rem;color:var(--text-dim);line-height:1.9;padding-left:1rem;position:relative;"><span style="color:var(--teal);position:absolute;left:0;">→</span>MO SMS SHALL_RETRY_AFTER → 30 seconds</li>
+          <li style="font-size: 0.85rem;color:var(--text-dim);line-height:1.9;padding-left:1rem;position:relative;"><span style="color:var(--teal);position:absolute;left:0;">→</span>Requirement VERIFIED_BY → Test Case (cross-doc link)</li>
+          <li style="font-size: 0.85rem;color:var(--text-dim);line-height:1.9;padding-left:1rem;position:relative;"><span style="color:var(--teal);position:absolute;left:0;">→</span>Requirement SUPERSEDES → Retired requirement</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- S9: CLOSING -->
+  <div class="slide" id="s9">
+    <div class="label">Demo Complete</div>
+    <h1>Two docs.<br><em>One living graph.</em></h1>
+    <div class="teal-line"></div>
+    <div class="close-stats">
+      <div class="cs"><div class="cs-num t">52</div><div class="cs-label">Req pages ingested</div></div>
+      <div class="cs"><div class="cs-num a">70+</div><div class="cs-label">Requirements mapped</div></div>
+      <div class="cs"><div class="cs-num g">135</div><div class="cs-label">Combined doc pages</div></div>
+      <div class="cs"><div class="cs-num t">∞</div><div class="cs-label">Compliance questions answered</div></div>
+    </div>
+    <p class="subtitle" style="margin-top:1.5rem;">Requirements say <em>what</em>. Test plans say <em>how to verify</em>. The knowledge graph holds both — and lets you query across them instantly. That's what we're building for your procurement documents.</p>
+  </div>
+
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button id="prev" onclick="navigate(-1)">←</button>
+  <div class="nav-dots" id="dots"></div>
+  <span class="slide-counter" id="counter">1 / 10</span>
+  <button id="next" onclick="navigate(1)">→</button>
+</div>
+
+<script>
+  const total = 10;
+  let current = 0;
+  const dotsEl = document.getElementById('dots');
+  const counterEl = document.getElementById('counter');
+  const progressEl = document.getElementById('progress');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotsEl.appendChild(d);
+  }
+
+  function goTo(n) {
+    const slides = document.querySelectorAll('.slide');
+    const old = current;
+    current = n;
+    slides[old].classList.remove('active');
+    slides[old].classList.add('exit');
+    setTimeout(() => slides[old].classList.remove('exit'), 500);
+    slides[current].classList.add('active');
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
+    counterEl.textContent = (current + 1) + ' / ' + total;
+    progressEl.style.width = ((current + 1) / total * 100) + '%';
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === total - 1;
+  }
+
+  function navigate(dir) { const n = current + dir; if (n >= 0 && n < total) goTo(n); }
+  prevBtn.disabled = true;
+  progressEl.style.width = (1 / total * 100) + '%';
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') navigate(1);
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') navigate(-1);
+  });
+</script>
+</body>
+</html>

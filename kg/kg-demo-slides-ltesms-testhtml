@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Document → Knowledge Graph: Live Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,700;0,900;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111520;
+    --surface2: #161c2c;
+    --amber: #f5a623;
+    --amber-dim: #c47d10;
+    --teal: #2dd4bf;
+    --green: #4ade80;
+    --purple: #a78bfa;
+    --red: #f87171;
+    --muted: #4a5568;
+    --text: #e2e8f0;
+    --text-dim: #718096;
+    --line: rgba(245,166,35,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  .grid-bg {
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none; z-index: 0;
+  }
+  .vignette {
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, var(--bg) 100%);
+    pointer-events: none; z-index: 1;
+  }
+
+  /* NAV */
+  .nav {
+    position: fixed; bottom: 2rem; left: 50%;
+    transform: translateX(-50%);
+    display: flex; align-items: center; gap: 1rem;
+    z-index: 100;
+    background: rgba(17,21,32,0.9);
+    border: 1px solid var(--line);
+    padding: 0.6rem 1.2rem; border-radius: 999px;
+    backdrop-filter: blur(12px);
+  }
+  .nav button {
+    background: none; border: none; color: var(--amber);
+    cursor: pointer; font-size: 1.375rem; padding: 0.2rem 0.6rem;
+    transition: opacity 0.2s; font-family: 'DM Mono', monospace;
+  }
+  .nav button:hover { opacity: 0.7; }
+  .nav button:disabled { opacity: 0.2; cursor: default; }
+  .slide-counter { color: var(--text-dim); font-size: 0.9375rem; min-width: 60px; text-align: center; }
+  .nav-dots { display: flex; gap: 6px; align-items: center; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); cursor: pointer; transition: all 0.3s; }
+  .dot.active { background: var(--amber); width: 18px; border-radius: 3px; }
+
+  .progress-bar { position: fixed; top: 0; left: 0; height: 2px; background: var(--amber); transition: width 0.4s ease; z-index: 200; }
+  .key-hint { position: fixed; top: 1.5rem; right: 2rem; font-size: 0.8125rem; color: var(--muted); z-index: 100; letter-spacing: 0.1em; }
+  .demo-badge { position: fixed; top: 1.5rem; left: 2rem; font-size: 0.8125rem; color: var(--teal); z-index: 100; letter-spacing: 0.1em; border: 1px solid var(--teal); padding: 0.2rem 0.6rem; border-radius: 3px; opacity: 0.7; }
+
+  /* SLIDES */
+  .slides-wrapper { width: 100vw; height: 100vh; position: relative; }
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 3rem 5rem;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    transform: translateY(20px); z-index: 2;
+  }
+  .slide.active { opacity: 1; pointer-events: all; transform: translateY(0); }
+  .slide.exit { opacity: 0; transform: translateY(-20px); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .slide.active > * { animation: fadeUp 0.5s ease both; }
+  .slide.active > *:nth-child(1) { animation-delay: 0.05s; }
+  .slide.active > *:nth-child(2) { animation-delay: 0.15s; }
+  .slide.active > *:nth-child(3) { animation-delay: 0.25s; }
+  .slide.active > *:nth-child(4) { animation-delay: 0.35s; }
+  .slide.active > *:nth-child(5) { animation-delay: 0.45s; }
+  .slide.active > *:nth-child(6) { animation-delay: 0.55s; }
+
+  /* TYPOGRAPHY */
+  .label { font-size: 0.875rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--amber); margin-bottom: 1.2rem; opacity: 0.8; }
+  h1 { font-family: 'Fraunces', serif; font-size: clamp(2.5rem, 5vw, 5rem); font-weight: 900; line-height: 1.05; text-align: center; }
+  h1 em { font-style: italic; color: var(--amber); }
+  h2 { font-family: 'Fraunces', serif; font-size: clamp(1.75rem, 3vw, 2.75rem); font-weight: 700; line-height: 1.2; text-align: center; margin-bottom: 0.8rem; }
+  h2 em { font-style: italic; color: var(--amber); }
+  .amber-line { width: 60px; height: 2px; background: var(--amber); margin: 1.2rem auto; }
+  .subtitle { color: var(--text-dim); font-size: clamp(0.975rem, 1.3vw, 1.125rem); text-align: center; max-width: 600px; line-height: 1.7; margin-top: 1rem; }
+
+  /* DOC SNIPPET */
+  .doc-box {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--teal);
+    padding: 1.2rem 1.6rem;
+    max-width: 800px; width: 100%;
+    font-size: 0.9rem;
+    line-height: 1.8;
+    border-radius: 3px;
+    margin-top: 1.2rem;
+    position: relative;
+  }
+  .doc-box::before {
+    content: 'SOURCE DOCUMENT';
+    position: absolute; top: -0.6rem; left: 1rem;
+    font-size: 0.6875rem; letter-spacing: 0.15em;
+    color: var(--teal); background: var(--bg); padding: 0 0.4rem;
+  }
+  .doc-box .hl-entity { color: var(--amber); font-weight: 500; }
+  .doc-box .hl-rel { color: var(--teal); }
+  .doc-box .hl-attr { color: var(--purple); }
+  .doc-box .hl-value { color: var(--green); }
+  .doc-box .dim { color: var(--text-dim); }
+
+  /* STEP FLOW */
+  .step-flow {
+    display: flex; gap: 0; align-items: center;
+    width: 100%; max-width: 900px; margin-top: 1.5rem;
+  }
+  .step-box {
+    flex: 1; background: var(--surface); border: 1px solid var(--line);
+    padding: 1rem 0.8rem; border-radius: 4px; text-align: center;
+    position: relative;
+  }
+  .step-box .step-num { font-size: 0.75rem; color: var(--amber); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.4rem; }
+  .step-box .step-title { font-family: 'Fraunces', serif; font-size: 1.125rem; font-weight: 700; color: var(--text); margin-bottom: 0.3rem; }
+  .step-box .step-desc { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.5; }
+  .step-arrow { color: var(--amber); font-size: 1.5rem; padding: 0 0.5rem; flex-shrink: 0; }
+
+  /* ENTITY CARDS */
+  .entity-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 0.8rem; width: 100%; max-width: 900px; margin-top: 1.2rem;
+  }
+  .entity-card {
+    background: var(--surface); border: 1px solid var(--line);
+    padding: 0.9rem 0.8rem; border-radius: 4px;
+    position: relative; overflow: hidden;
+  }
+  .entity-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; }
+  .entity-card.type-network::before { background: var(--amber); }
+  .entity-card.type-protocol::before { background: var(--teal); }
+  .entity-card.type-device::before { background: var(--purple); }
+  .entity-card.type-test::before { background: var(--green); }
+  .entity-type { font-size: 0.6875rem; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.4rem; }
+  .type-network .entity-type { color: var(--amber); }
+  .type-protocol .entity-type { color: var(--teal); }
+  .type-device .entity-type { color: var(--purple); }
+  .type-test .entity-type { color: var(--green); }
+  .entity-name { font-family: 'Fraunces', serif; font-size: 1.062rem; font-weight: 700; color: var(--text); margin-bottom: 0.3rem; }
+  .entity-attrs { font-size: 0.75rem; color: var(--text-dim); line-height: 1.6; }
+
+  /* TRIPLE TABLE */
+  .triple-table {
+    width: 100%; max-width: 800px; margin-top: 1.2rem;
+    border-collapse: collapse; font-size: 0.875rem;
+  }
+  .triple-table th {
+    font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--amber); padding: 0.5rem 1rem; text-align: left;
+    border-bottom: 1px solid var(--line);
+  }
+  .triple-table td { padding: 0.6rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .triple-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .triple-table .subject { color: var(--amber); }
+  .triple-table .predicate { color: var(--teal); }
+  .triple-table .object { color: var(--purple); }
+
+  /* GRAPH SVG */
+  .graph-container {
+    width: 100%; max-width: 860px; margin-top: 1.2rem;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 4px; padding: 0.5rem;
+    position: relative;
+  }
+  .graph-container::before {
+    content: 'KNOWLEDGE GRAPH — EXTRACTED FROM LTESMS DOCUMENT';
+    position: absolute; top: -0.6rem; left: 1rem;
+    font-size: 0.6875rem; letter-spacing: 0.12em; color: var(--amber);
+    background: var(--bg); padding: 0 0.4rem;
+  }
+
+  /* QUERY DEMO */
+  .query-block {
+    width: 100%; max-width: 800px; margin-top: 1.2rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+  }
+  .q-panel {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 4px; padding: 1.2rem; font-size: 0.875rem;
+  }
+  .q-panel h4 { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.8rem; }
+  .q-panel.keyword h4 { color: var(--red); }
+  .q-panel.graph h4 { color: var(--green); }
+  .q-question { font-family: 'Fraunces', serif; font-style: italic; font-size: 1.062rem; color: var(--text); margin-bottom: 0.8rem; line-height: 1.4; }
+  .q-result { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.8; }
+  .q-result .hit { color: var(--green); }
+  .q-result .miss { color: var(--red); opacity: 0.7; }
+  .q-result .chain { color: var(--teal); }
+
+  /* TWO COL */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; width: 100%; max-width: 900px; margin-top: 1.2rem; }
+  .col-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 1.2rem; }
+  .col-panel h4 { font-family: 'Fraunces', serif; font-size: 1.125rem; color: var(--amber); margin-bottom: 0.7rem; }
+  .col-panel ul { list-style: none; }
+  .col-panel ul li { font-size: 0.85rem; color: var(--text-dim); line-height: 1.9; padding-left: 1rem; position: relative; }
+  .col-panel ul li::before { content: '→'; color: var(--amber); position: absolute; left: 0; }
+
+  /* CLOSING */
+  .closing-stats { display: flex; gap: 3rem; margin-top: 2rem; }
+  .cstat { text-align: center; }
+  .cstat-num { font-family: 'Fraunces', serif; font-size: 3.5rem; font-weight: 900; color: var(--amber); line-height: 1; }
+  .cstat-label { font-size: 0.8125rem; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.3rem; }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="vignette"></div>
+<div class="progress-bar" id="progress"></div>
+<div class="key-hint">← → to navigate</div>
+<div class="demo-badge">LIVE DEMO — LTESMS DOC</div>
+
+<div class="slides-wrapper" id="slides">
+
+  <!-- SLIDE 1: TITLE -->
+  <div class="slide active" id="s0">
+    <div class="label">Knowledge Graph — Live Demo</div>
+    <h1>From <em>Flat Document</em><br>to Knowledge Graph</h1>
+    <div class="amber-line"></div>
+    <p class="subtitle">Using a real Verizon Wireless LTE SMS Test Plan as our source document, we'll walk through how a knowledge graph is extracted — step by step.</p>
+    <div style="margin-top:2rem; background: var(--surface); border:1px solid var(--line); padding: 0.8rem 1.4rem; border-radius:4px; font-size: 0.875rem; color: var(--text-dim);">
+      <span style="color:var(--teal);">SOURCE:</span> &nbsp; Verizon Wireless LTE SMS Test Plan (LTESMS) · Version 25.0 · February 2026 · 83 pages
+    </div>
+  </div>
+
+  <!-- SLIDE 2: THE RAW DOCUMENT -->
+  <div class="slide" id="s1">
+    <div class="label">Step 01 — The Raw Document</div>
+    <h2>Here is what the <em>document</em> looks like</h2>
+    <div class="doc-box" style="font-size: 0.85rem;">
+      <span class="dim">2.15 MOBILE TERMINATED SMS MESSAGE — 3GPP SMS</span><br><br>
+      This test verifies the <span class="hl-entity">LTE device</span> functionality for <span class="hl-entity">3GPP SMS</span> formatted <span class="hl-entity">mobile-terminated SMS</span>.<br><br>
+      <span class="dim">Pre-Conditions:</span><br>
+      The <span class="hl-entity">LTE device under test (DUT)</span> must be registered with <span class="hl-entity">IMS</span> through <span class="hl-entity">LTE carrier</span>.<br><br>
+      <span class="dim">Procedures:</span><br>
+      a. Using <span class="hl-entity">Test platform</span>, confirm DUT is in idle state.<br>
+      b. Send a <span class="hl-entity">3GPP formatted SMS</span> from <span class="hl-entity">Test platform</span> to <span class="hl-entity">DUT</span>.<br>
+      c. Verify DUT received the SMS text message.<br><br>
+      <span class="dim">Expected Results:</span><br>
+      The <span class="hl-entity">LTE device</span> successfully receives <span class="hl-entity">3GPP formatted SMS</span> over <span class="hl-entity">IMS</span>.
+    </div>
+    <p class="subtitle">To a keyword search engine, this is just words. To a knowledge graph — it's a web of entities and relationships.</p>
+  </div>
+
+  <!-- SLIDE 3: THE TRANSFORMATION PIPELINE -->
+  <div class="slide" id="s2">
+    <div class="label">Step 02 — The Pipeline</div>
+    <h2>How <em>AI</em> processes the document</h2>
+    <div class="step-flow">
+      <div class="step-box">
+        <div class="step-num">Phase 1</div>
+        <div class="step-title">Chunking</div>
+        <div class="step-desc">Document split into logical sections — test cases, procedures, requirements</div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step-box">
+        <div class="step-num">Phase 2</div>
+        <div class="step-title">Entity Extraction</div>
+        <div class="step-desc">LLM identifies key concepts: devices, protocols, standards, actions</div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step-box">
+        <div class="step-num">Phase 3</div>
+        <div class="step-title">Relationship Inference</div>
+        <div class="step-desc">Semantic understanding maps how entities connect to each other</div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step-box">
+        <div class="step-num">Phase 4</div>
+        <div class="step-title">Graph Population</div>
+        <div class="step-desc">Triples written into Neo4j — nodes and edges, queryable in real time</div>
+      </div>
+    </div>
+    <p class="subtitle" style="margin-top:1rem;">What used to take a team of domain experts weeks now runs automatically.</p>
+  </div>
+
+  <!-- SLIDE 4: ENTITIES EXTRACTED -->
+  <div class="slide" id="s3">
+    <div class="label">Step 03 — Entity Extraction</div>
+    <h2><em>Who</em> and <em>what</em> are in this document?</h2>
+    <div class="entity-grid">
+      <div class="entity-card type-network">
+        <div class="entity-type">Network Entity</div>
+        <div class="entity-name">IMS</div>
+        <div class="entity-attrs">IP Multimedia Subsystem<br>Role: SMS transport layer<br>Protocol: SIP/IP</div>
+      </div>
+      <div class="entity-card type-network">
+        <div class="entity-type">Network Entity</div>
+        <div class="entity-name">P-CSCF</div>
+        <div class="entity-attrs">Proxy-Call Session Control<br>Role: SIP signaling proxy<br>Responds to: SIP REGISTER</div>
+      </div>
+      <div class="entity-card type-device">
+        <div class="entity-type">Device Entity</div>
+        <div class="entity-name">DUT</div>
+        <div class="entity-attrs">Device Under Test<br>Type: LTE mobile device<br>Registers via: IMS/LTE</div>
+      </div>
+      <div class="entity-card type-protocol">
+        <div class="entity-type">Protocol Entity</div>
+        <div class="entity-name">3GPP SMS</div>
+        <div class="entity-attrs">SMS format standard<br>Max size: 160 chars/segment<br>Encoding: GSM-7bit / UCS-2</div>
+      </div>
+      <div class="entity-card type-protocol">
+        <div class="entity-type">Protocol Entity</div>
+        <div class="entity-name">SIP MESSAGE</div>
+        <div class="entity-attrs">Session Initiation Protocol<br>Used for: SMS transport<br>Timers: T1=3s, T2=16s, TF=30s</div>
+      </div>
+      <div class="entity-card type-network">
+        <div class="entity-type">Network Entity</div>
+        <div class="entity-name">LTE Carrier</div>
+        <div class="entity-attrs">Network operator<br>Provides: IMS PDN<br>Band: 3GPP Band 13</div>
+      </div>
+      <div class="entity-card type-test">
+        <div class="entity-type">Test Entity</div>
+        <div class="entity-name">Test Platform</div>
+        <div class="entity-attrs">Certification tool<br>Verifies: SIP call flows<br>Supports: EMS capability</div>
+      </div>
+      <div class="entity-card type-test">
+        <div class="entity-type">Test Case Entity</div>
+        <div class="entity-name">TC LTESMS-6306</div>
+        <div class="entity-attrs">MT SMS — 3GPP<br>Status: Active v25.0<br>Requirement: VZW LTE SMS</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: RELATIONSHIPS AS TRIPLES -->
+  <div class="slide" id="s4">
+    <div class="label">Step 04 — Relationship Triples</div>
+    <h2>The document becomes <em>structured facts</em></h2>
+    <table class="triple-table">
+      <thead>
+        <tr>
+          <th>Subject (Entity A)</th>
+          <th>Predicate (Relationship)</th>
+          <th>Object (Entity B)</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="subject">DUT</td>
+          <td class="predicate">REGISTERS_WITH</td>
+          <td class="object">IMS</td>
+          <td style="color:var(--text-dim);font-size: 0.75rem;">TC-6306 Pre-Conditions</td>
+        </tr>
+        <tr>
+          <td class="subject">DUT</td>
+          <td class="predicate">CONNECTS_VIA</td>
+          <td class="object">LTE Carrier</td>
+          <td style="color:var(--text-dim);font-size: 0.75rem;">TC-6306 Pre-Conditions</td>
+        </tr>
+        <tr>
+          <td class="subject">SIP MESSAGE</td>
+          <td class="predicate">ROUTED_THROUGH</td>
+          <td class="object">P-CSCF</td>
+          <td style="color:var(--text-dim);font-size: 0.75rem;">TC-6316 Procedures</td>
+        </tr>
+        <tr>
+          <td class="subject">3GPP SMS</td>
+          <td class="predicate">TRANSPORTED_OVER</td>
+          <td class="object">IMS</td>
+          <td style="color:var(--text-dim);font-size: 0.75rem;">TC-6306 Expected Results</td>
+        </tr>
+        <tr>
+          <td class="subject">TC LTESMS-6306</td>
+          <td class="predicate">VERIFIES</td>
+          <td class="object">3GPP SMS delivery</td>
+          <td style="color:var(--text-dim);font-size: 0.75rem;">TC-6306 Purpose</td>
+        </tr>
+        <tr>
+          <td class="subject">SIP T1 Timer</td>
+          <td class="predicate">HAS_DEFAULT_VALUE</td>
+          <td class="object">3 seconds</td>
+          <td style="color:var(--text-dim);font-size: 0.75rem;">TC-6323 Procedure</td>
+        </tr>
+        <tr>
+          <td class="subject">IPsec</td>
+          <td class="predicate">PROTECTS</td>
+          <td class="object">SIP signaling</td>
+          <td style="color:var(--text-dim);font-size: 0.75rem;">TC-4105999311934722</td>
+        </tr>
+        <tr>
+          <td class="subject">TC LTESMS-6323</td>
+          <td class="predicate">TESTS_BEHAVIOR_OF</td>
+          <td class="object">SIP Retry Timers</td>
+          <td style="color:var(--text-dim);font-size: 0.75rem;">TC-6323 Purpose</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SLIDE 6: THE GRAPH VISUALIZATION -->
+  <div class="slide" id="s5">
+    <div class="label">Step 05 — The Knowledge Graph</div>
+    <h2>The document as a <em>connected graph</em></h2>
+    <div class="graph-container">
+      <svg viewBox="0 0 820 360" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+        <defs>
+          <marker id="arr" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+            <path d="M0,0 L0,7 L7,3.5 z" fill="#f5a62370"/>
+          </marker>
+          <marker id="arr-teal" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+            <path d="M0,0 L0,7 L7,3.5 z" fill="#2dd4bf70"/>
+          </marker>
+          <marker id="arr-purple" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+            <path d="M0,0 L0,7 L7,3.5 z" fill="#a78bfa70"/>
+          </marker>
+          <marker id="arr-green" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+            <path d="M0,0 L0,7 L7,3.5 z" fill="#4ade8070"/>
+          </marker>
+        </defs>
+
+        <!-- Edges -->
+        <!-- DUT → IMS -->
+        <line x1="180" y1="130" x2="310" y2="100" stroke="#f5a62360" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="220" y="103" font-family="DM Mono" font-size="10" fill="#f5a623" opacity="0.8">REGISTERS_WITH</text>
+
+        <!-- DUT → LTE Carrier -->
+        <line x1="170" y1="160" x2="130" y2="240" stroke="#f5a62360" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="90" y="205" font-family="DM Mono" font-size="9.375" fill="#f5a623" opacity="0.8">CONNECTS_VIA</text>
+
+        <!-- IMS → P-CSCF -->
+        <line x1="400" y1="95" x2="520" y2="100" stroke="#2dd4bf60" stroke-width="1.5" marker-end="url(#arr-teal)"/>
+        <text x="432" y="85" font-family="DM Mono" font-size="9.375" fill="#2dd4bf" opacity="0.8">PROXIED_BY</text>
+
+        <!-- SIP MESSAGE → P-CSCF -->
+        <line x1="510" y1="185" x2="530" y2="135" stroke="#2dd4bf60" stroke-width="1.5" marker-end="url(#arr-teal)"/>
+        <text x="545" y="165" font-family="DM Mono" font-size="9.375" fill="#2dd4bf" opacity="0.8">ROUTED_THROUGH</text>
+
+        <!-- 3GPP SMS → IMS -->
+        <line x1="340" y1="200" x2="355" y2="130" stroke="#a78bfa60" stroke-width="1.5" marker-end="url(#arr-purple)"/>
+        <text x="280" y="168" font-family="DM Mono" font-size="9.375" fill="#a78bfa" opacity="0.8">TRANSPORTED_OVER</text>
+
+        <!-- DUT → 3GPP SMS -->
+        <line x1="200" y1="150" x2="305" y2="200" stroke="#a78bfa60" stroke-width="1.5" marker-end="url(#arr-purple)"/>
+        <text x="215" y="188" font-family="DM Mono" font-size="9.375" fill="#a78bfa" opacity="0.8">SENDS</text>
+
+        <!-- TC-6306 → 3GPP SMS -->
+        <line x1="360" y1="295" x2="355" y2="230" stroke="#4ade8060" stroke-width="1.5" marker-end="url(#arr-green)"/>
+        <text x="368" y="268" font-family="DM Mono" font-size="9.375" fill="#4ade80" opacity="0.8">VERIFIES</text>
+
+        <!-- IPsec → SIP MESSAGE -->
+        <line x1="655" y1="260" x2="585" y2="200" stroke="#f5a62360" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="630" y="234" font-family="DM Mono" font-size="9.375" fill="#f5a623" opacity="0.8">PROTECTS</text>
+
+        <!-- SIP Timers → SIP MESSAGE -->
+        <line x1="670" y1="145" x2="600" y2="180" stroke="#2dd4bf60" stroke-width="1.5" marker-end="url(#arr-teal)"/>
+        <text x="628" y="155" font-family="DM Mono" font-size="9.375" fill="#2dd4bf" opacity="0.8">GOVERNS</text>
+
+        <!-- NODES -->
+        <!-- DUT -->
+        <rect x="90" y="115" width="100" height="50" rx="3" fill="#111520" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="140" y="136" text-anchor="middle" font-family="DM Mono" font-size="12.5" fill="#a78bfa" font-weight="500">DUT</text>
+        <text x="140" y="152" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">LTE Device</text>
+
+        <!-- IMS -->
+        <rect x="315" y="75" width="90" height="50" rx="3" fill="#111520" stroke="#f5a623" stroke-width="2"/>
+        <text x="360" y="96" text-anchor="middle" font-family="DM Mono" font-size="12.5" fill="#f5a623" font-weight="500">IMS</text>
+        <text x="360" y="112" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Network Core</text>
+
+        <!-- P-CSCF -->
+        <rect x="525" y="80" width="100" height="50" rx="3" fill="#111520" stroke="#2dd4bf" stroke-width="1.5"/>
+        <text x="575" y="101" text-anchor="middle" font-family="DM Mono" font-size="12.5" fill="#2dd4bf" font-weight="500">P-CSCF</text>
+        <text x="575" y="117" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">SIP Proxy</text>
+
+        <!-- LTE Carrier -->
+        <rect x="65" y="235" width="110" height="50" rx="3" fill="#111520" stroke="#f5a623" stroke-width="1"/>
+        <text x="120" y="256" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#f5a623">LTE Carrier</text>
+        <text x="120" y="272" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Band 13</text>
+
+        <!-- 3GPP SMS -->
+        <rect x="295" y="185" width="105" height="50" rx="3" fill="#111520" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="348" y="206" text-anchor="middle" font-family="DM Mono" font-size="11.88" fill="#a78bfa" font-weight="500">3GPP SMS</text>
+        <text x="348" y="222" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Protocol</text>
+
+        <!-- SIP MESSAGE -->
+        <rect x="470" y="165" width="120" height="50" rx="3" fill="#111520" stroke="#2dd4bf" stroke-width="1.5"/>
+        <text x="530" y="186" text-anchor="middle" font-family="DM Mono" font-size="11.88" fill="#2dd4bf" font-weight="500">SIP MESSAGE</text>
+        <text x="530" y="202" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Transport</text>
+
+        <!-- TC-6306 -->
+        <rect x="295" y="280" width="110" height="50" rx="3" fill="#111520" stroke="#4ade80" stroke-width="1.5"/>
+        <text x="350" y="299" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#4ade80" font-weight="500">TC-6306</text>
+        <text x="350" y="315" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">MT SMS Test</text>
+
+        <!-- IPsec -->
+        <rect x="608" y="240" width="90" height="50" rx="3" fill="#111520" stroke="#f5a623" stroke-width="1"/>
+        <text x="653" y="261" text-anchor="middle" font-family="DM Mono" font-size="11.88" fill="#f5a623">IPsec</text>
+        <text x="653" y="277" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Security</text>
+
+        <!-- SIP Timers -->
+        <rect x="630" y="118" width="105" height="50" rx="3" fill="#111520" stroke="#2dd4bf" stroke-width="1"/>
+        <text x="683" y="139" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#2dd4bf">SIP Timers</text>
+        <text x="683" y="155" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">T1=3s T2=16s TF=30s</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: QUERY COMPARISON -->
+  <div class="slide" id="s6">
+    <div class="label">Step 06 — Querying the Graph</div>
+    <h2>Keyword search <em>vs</em> graph traversal</h2>
+    <div class="query-block">
+      <div class="q-panel keyword">
+        <h4>❌ Keyword Search</h4>
+        <div class="q-question">"What happens when IMS doesn't respond to SMS?"</div>
+        <div class="q-result">
+          <span class="miss">Returns: All documents containing "IMS" + "SMS"</span><br><br>
+          • 47 matching docs found<br>
+          • No understanding of failure chain<br>
+          • No retry behavior context<br>
+          • No timer relationships<br>
+          • User must read all 47 docs manually
+        </div>
+      </div>
+      <div class="q-panel graph">
+        <h4>✓ Knowledge Graph Query</h4>
+        <div class="q-question">"What happens when IMS doesn't respond to SMS?"</div>
+        <div class="q-result">
+          <span class="hit">Traverses: DUT → SIP MESSAGE → P-CSCF → [no response]</span><br><br>
+          <span class="chain">→ T1 timer fires at 3 seconds</span><br>
+          <span class="chain">→ Retransmits at 6s, 12s, 16s intervals</span><br>
+          <span class="chain">→ Timer F expires at 30 seconds</span><br>
+          <span class="chain">→ DUT shows SMS failure to user</span><br>
+          <span class="chain">→ Second attempt after 30s with TP-RD bit=1</span>
+        </div>
+      </div>
+    </div>
+    <p class="subtitle" style="margin-top:0.8rem;">The graph doesn't just find the document — it <em>answers the question.</em></p>
+  </div>
+
+  <!-- SLIDE 8: WHAT WE GOT FROM THIS DOC -->
+  <div class="slide" id="s7">
+    <div class="label">Step 07 — What We Extracted</div>
+    <h2>One 83-page document becomes a <em>rich graph</em></h2>
+    <div class="two-col">
+      <div class="col-panel">
+        <h4>Entities Extracted</h4>
+        <ul>
+          <li>Network components: IMS, P-CSCF, LTE Carrier, PDN</li>
+          <li>Devices: DUT (LTE device), Test Platform, UICC/USIM</li>
+          <li>Protocols: 3GPP SMS, SIP, IPsec, NAS, 3GPP2 SMS</li>
+          <li>Standards: GSM-7bit, UCS-2, GCF 36.523-1</li>
+          <li>Timers: T1, T2, Timer F (with exact values)</li>
+          <li>Test cases: 25+ test case nodes with IDs</li>
+          <li>Parameters: smsformat, smswriteuicc, SMS_Over_IP</li>
+        </ul>
+      </div>
+      <div class="col-panel">
+        <h4>Relationships Mapped</h4>
+        <ul>
+          <li>DUT REGISTERS_WITH → IMS</li>
+          <li>SIP MESSAGE ROUTED_THROUGH → P-CSCF</li>
+          <li>Test Case VERIFIES → Requirement</li>
+          <li>IPsec PROTECTS → SIP signaling</li>
+          <li>Timer GOVERNS → Retry behavior</li>
+          <li>SMS STORED_IN → Device memory / UICC</li>
+          <li>Error code TRIGGERS → Retry / failure state</li>
+          <li>TC version SUPERSEDES → Previous TC version</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: THE CHATBOT USE CASE -->
+  <div class="slide" id="s8">
+    <div class="label">Step 08 — The Real Application</div>
+    <h2>Now build a <em>chatbot</em> on top of it</h2>
+    <div class="two-col">
+      <div class="col-panel">
+        <h4>Without Knowledge Graph</h4>
+        <ul>
+          <li>"Which test cases cover IPsec?" → search all 83 pages</li>
+          <li>"What SIP errors can fail an MO SMS?" → manual scan</li>
+          <li>"How do retry timers work?" → find and read section 2.30</li>
+          <li>"When was TC-2.76 added?" → check revision history manually</li>
+          <li>New engineer: weeks to get up to speed</li>
+        </ul>
+      </div>
+      <div class="col-panel">
+        <h4>With Knowledge Graph</h4>
+        <ul>
+          <li>"Which test cases cover IPsec?" → instant: TC-2.76, retired TC-2.51</li>
+          <li>"What SIP errors fail MO SMS?" → 400, 404, 500, 502, 503 with context</li>
+          <li>"How do retry timers work?" → full chain: T1→T2→TimerF behavior</li>
+          <li>"When was TC-2.76 added?" → February 2025, version 25.0</li>
+          <li>New engineer: hours, not weeks</li>
+        </ul>
+      </div>
+    </div>
+    <p class="subtitle" style="margin-top:1rem;">The graph doesn't replace the document — it makes the document <em>answerable.</em></p>
+  </div>
+
+  <!-- SLIDE 10: CLOSING -->
+  <div class="slide" id="s9">
+    <div class="label">Demo Complete</div>
+    <h1>One document.<br><em>Infinite</em> questions answered.</h1>
+    <div class="amber-line"></div>
+    <div class="closing-stats">
+      <div class="cstat">
+        <div class="cstat-num">83</div>
+        <div class="cstat-label">Pages ingested</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat-num">25+</div>
+        <div class="cstat-label">Entities extracted</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat-num">50+</div>
+        <div class="cstat-label">Relationships mapped</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat-num">∞</div>
+        <div class="cstat-label">Questions answerable</div>
+      </div>
+    </div>
+    <p class="subtitle" style="margin-top:1.5rem;">This is what your procurement documents, shipment logs, and technical specs can become — a living, queryable knowledge graph that answers questions in real time.</p>
+  </div>
+
+</div>
+
+<!-- NAVIGATION -->
+<div class="nav">
+  <button id="prev" onclick="navigate(-1)">←</button>
+  <div class="nav-dots" id="dots"></div>
+  <span class="slide-counter" id="counter">1 / 10</span>
+  <button id="next" onclick="navigate(1)">→</button>
+</div>
+
+<script>
+  const total = 10;
+  let current = 0;
+
+  const dotsEl = document.getElementById('dots');
+  const counterEl = document.getElementById('counter');
+  const progressEl = document.getElementById('progress');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotsEl.appendChild(d);
+  }
+
+  function goTo(n) {
+    const slides = document.querySelectorAll('.slide');
+    const oldIdx = current;
+    current = n;
+
+    slides[oldIdx].classList.remove('active');
+    slides[oldIdx].classList.add('exit');
+    setTimeout(() => slides[oldIdx].classList.remove('exit'), 500);
+    slides[current].classList.add('active');
+
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+    });
+
+    counterEl.textContent = (current + 1) + ' / ' + total;
+    progressEl.style.width = ((current + 1) / total * 100) + '%';
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === total - 1;
+  }
+
+  function navigate(dir) {
+    const n = current + dir;
+    if (n >= 0 && n < total) goTo(n);
+  }
+
+  prevBtn.disabled = true;
+  progressEl.style.width = (1 / total * 100) + '%';
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') navigate(1);
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') navigate(-1);
+  });
+</script>
+</body>
+</html>

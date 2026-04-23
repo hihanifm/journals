@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knowledge Graphs — The Evolution of Retrieval</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,700;0,900;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111520;
+    --amber: #f5a623;
+    --amber-dim: #c47d10;
+    --teal: #2dd4bf;
+    --muted: #4a5568;
+    --text: #e2e8f0;
+    --text-dim: #718096;
+    --line: rgba(245,166,35,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* NAV */
+  .nav {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    z-index: 100;
+    background: rgba(17,21,32,0.9);
+    border: 1px solid var(--line);
+    padding: 0.6rem 1.2rem;
+    border-radius: 999px;
+    backdrop-filter: blur(12px);
+  }
+  .nav button {
+    background: none;
+    border: none;
+    color: var(--amber);
+    cursor: pointer;
+    font-size: 1.375rem;
+    padding: 0.2rem 0.6rem;
+    transition: opacity 0.2s;
+    font-family: 'DM Mono', monospace;
+  }
+  .nav button:hover { opacity: 0.7; }
+  .nav button:disabled { opacity: 0.2; cursor: default; }
+  .slide-counter {
+    color: var(--text-dim);
+    font-size: 0.9375rem;
+    min-width: 60px;
+    text-align: center;
+  }
+  .nav-dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .dot.active {
+    background: var(--amber);
+    width: 18px;
+    border-radius: 3px;
+  }
+
+  /* SLIDES */
+  .slides-wrapper {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 4rem 6rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    transform: translateY(20px);
+  }
+  .slide.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
+  }
+  .slide.exit {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  /* GRID BG */
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .vignette {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, var(--bg) 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .slide { z-index: 2; }
+
+  /* TYPOGRAPHY */
+  .label {
+    font-size: 0.875rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 1.5rem;
+    opacity: 0.8;
+  }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(3.125rem, 6vw, 6.25rem);
+    font-weight: 900;
+    line-height: 1.05;
+    color: var(--text);
+    text-align: center;
+  }
+  h1 em {
+    font-style: italic;
+    color: var(--amber);
+  }
+  h2 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(2.25rem, 4vw, 3.75rem);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--text);
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  h2 em { font-style: italic; color: var(--amber); }
+
+  .subtitle {
+    color: var(--text-dim);
+    font-size: clamp(1.062rem, 1.5vw, 1.25rem);
+    text-align: center;
+    max-width: 560px;
+    line-height: 1.7;
+    margin-top: 1.5rem;
+  }
+
+  /* DIVIDER */
+  .amber-line {
+    width: 60px;
+    height: 2px;
+    background: var(--amber);
+    margin: 1.5rem auto;
+  }
+
+  /* TIMELINE */
+  .timeline {
+    display: flex;
+    gap: 0;
+    align-items: stretch;
+    width: 100%;
+    max-width: 900px;
+    margin-top: 2rem;
+  }
+  .timeline-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+  .timeline-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 28px;
+    left: 50%;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, var(--amber-dim), transparent);
+  }
+  .tl-dot {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 1px solid var(--amber-dim);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.625rem;
+    margin-bottom: 0.8rem;
+    position: relative;
+    z-index: 1;
+  }
+  .tl-label {
+    font-size: 0.875rem;
+    color: var(--amber);
+    letter-spacing: 0.1em;
+    text-align: center;
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+  }
+  .tl-desc {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    text-align: center;
+    line-height: 1.5;
+    padding: 0 0.3rem;
+  }
+
+  /* CARDS */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.2rem;
+    width: 100%;
+    max-width: 900px;
+    margin-top: 1.5rem;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 1.4rem;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--amber);
+  }
+  .card-num {
+    font-size: 0.8125rem;
+    color: var(--amber);
+    letter-spacing: 0.15em;
+    margin-bottom: 0.6rem;
+    text-transform: uppercase;
+  }
+  .card h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+  }
+  .card p {
+    font-size: 0.9125rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  /* GRAPH VIZ */
+  .graph-demo {
+    position: relative;
+    width: 500px;
+    height: 280px;
+    margin-top: 1.5rem;
+  }
+  svg.graph {
+    width: 100%;
+    height: 100%;
+  }
+  .node-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 13.75px;
+    fill: var(--text);
+  }
+  .edge-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11.25px;
+    fill: var(--amber);
+    opacity: 0.8;
+  }
+
+  /* TUPLE BLOCK */
+  .tuple-block {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--teal);
+    padding: 1.2rem 1.8rem;
+    font-size: 1.062rem;
+    line-height: 2;
+    margin-top: 1.5rem;
+    border-radius: 2px;
+    max-width: 600px;
+  }
+  .tuple-block .hl { color: var(--amber); }
+  .tuple-block .hl2 { color: var(--teal); }
+  .tuple-block .dim { color: var(--text-dim); }
+
+  /* TWO COL */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    width: 100%;
+    max-width: 900px;
+    margin-top: 1.5rem;
+    align-items: start;
+  }
+  .col-block {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 1.4rem;
+    border-radius: 4px;
+  }
+  .col-block h4 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.25rem;
+    color: var(--amber);
+    margin-bottom: 0.8rem;
+  }
+  .col-block ul {
+    list-style: none;
+    padding: 0;
+  }
+  .col-block ul li {
+    font-size: 0.9375rem;
+    color: var(--text-dim);
+    line-height: 1.8;
+    padding-left: 1rem;
+    position: relative;
+  }
+  .col-block ul li::before {
+    content: '→';
+    color: var(--amber);
+    position: absolute;
+    left: 0;
+  }
+
+  /* BIG STAT */
+  .stat-row {
+    display: flex;
+    gap: 3rem;
+    margin-top: 2rem;
+    align-items: center;
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat-num {
+    font-family: 'Fraunces', serif;
+    font-size: 4.375rem;
+    font-weight: 900;
+    color: var(--amber);
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 0.875rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 0.3rem;
+  }
+
+  /* QUOTE */
+  .pull-quote {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(1.5rem, 2.5vw, 2.25rem);
+    font-style: italic;
+    font-weight: 300;
+    color: var(--text);
+    text-align: center;
+    max-width: 700px;
+    line-height: 1.5;
+    margin-top: 1.5rem;
+    border-left: 3px solid var(--amber);
+    padding-left: 1.5rem;
+    text-align: left;
+  }
+
+  /* FAMILY TREE */
+  .family-tree {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+  }
+  .ft-row {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    position: relative;
+  }
+  .ft-node {
+    background: var(--surface);
+    border: 1px solid var(--amber-dim);
+    padding: 0.4rem 0.9rem;
+    border-radius: 3px;
+    color: var(--text);
+    white-space: nowrap;
+    position: relative;
+  }
+  .ft-node.root {
+    border-color: var(--amber);
+    color: var(--amber);
+    font-weight: 500;
+  }
+  .ft-connector {
+    width: 1px;
+    height: 24px;
+    background: var(--amber-dim);
+    margin: 0 auto;
+  }
+  .ft-hline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .ft-edge-label {
+    font-size: 0.75rem;
+    color: var(--teal);
+    margin: 0 0.3rem;
+  }
+
+  /* CLOSING */
+  .big-center {
+    text-align: center;
+  }
+  .tag-line {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(1.25rem, 2vw, 1.625rem);
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text-dim);
+    margin-top: 1rem;
+  }
+
+  /* KEYBOARD HINT */
+  .key-hint {
+    position: fixed;
+    top: 1.5rem;
+    right: 2rem;
+    font-size: 0.8125rem;
+    color: var(--muted);
+    z-index: 100;
+    letter-spacing: 0.1em;
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .slide.active > * {
+    animation: fadeUp 0.5s ease both;
+  }
+  .slide.active > *:nth-child(1) { animation-delay: 0.05s; }
+  .slide.active > *:nth-child(2) { animation-delay: 0.15s; }
+  .slide.active > *:nth-child(3) { animation-delay: 0.25s; }
+  .slide.active > *:nth-child(4) { animation-delay: 0.35s; }
+  .slide.active > *:nth-child(5) { animation-delay: 0.45s; }
+
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 2px;
+    background: var(--amber);
+    transition: width 0.4s ease;
+    z-index: 200;
+  }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="vignette"></div>
+<div class="progress-bar" id="progress"></div>
+<div class="key-hint">← → or click arrows to navigate</div>
+
+<div class="slides-wrapper" id="slides">
+
+  <!-- SLIDE 1: TITLE -->
+  <div class="slide active" id="s0">
+    <div class="label">A Technical Deep Dive</div>
+    <h1>The <em>Evolution</em> of<br>Knowledge Retrieval</h1>
+    <div class="amber-line"></div>
+    <p class="subtitle">From linear search to knowledge graphs — why humans obsess over finding things faster, and how graph databases changed everything.</p>
+  </div>
+
+  <!-- SLIDE 2: THE PRIMAL NEED -->
+  <div class="slide" id="s1">
+    <div class="label">01 — The Driving Force</div>
+    <h2>Humans are <em>obsessed</em><br>with finding things faster</h2>
+    <div class="amber-line"></div>
+    <p class="subtitle">Every major advancement in data structures is ultimately an answer to one question: <em>how do we retrieve the right information faster?</em></p>
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-num">O(n)</div>
+        <div class="stat-label">Linear Search</div>
+      </div>
+      <div style="color:var(--amber);font-size: 1.875rem;">→</div>
+      <div class="stat">
+        <div class="stat-num">O(log n)</div>
+        <div class="stat-label">Binary Tree</div>
+      </div>
+      <div style="color:var(--amber);font-size: 1.875rem;">→</div>
+      <div class="stat">
+        <div class="stat-num">O(1)</div>
+        <div class="stat-label">Hash Table</div>
+      </div>
+      <div style="color:var(--amber);font-size: 1.875rem;">→</div>
+      <div class="stat">
+        <div class="stat-num">∞</div>
+        <div class="stat-label">Knowledge Graph</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: RETRIEVAL EVOLUTION -->
+  <div class="slide" id="s2">
+    <div class="label">02 — The Evolution</div>
+    <h2>A century of <em>indexing</em></h2>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="tl-dot">📋</div>
+        <div class="tl-label">Linear</div>
+        <div class="tl-desc">Scan everything.<br>Simple, slow. O(n)</div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-dot">🌲</div>
+        <div class="tl-label">BST / B-Tree</div>
+        <div class="tl-desc">Divide & conquer.<br>O(log n) lookups</div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-dot">#</div>
+        <div class="tl-label">Hash Table</div>
+        <div class="tl-desc">Key → bucket.<br>Near O(1) access</div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-dot">📝</div>
+        <div class="tl-label">BM25</div>
+        <div class="tl-desc">Term frequency +<br>inverse doc freq</div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-dot">🕸</div>
+        <div class="tl-label">Knowledge Graph</div>
+        <div class="tl-desc">Entities +<br>relationships</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: BEYOND LOOKUP -->
+  <div class="slide" id="s3">
+    <div class="label">03 — The Limitation</div>
+    <h2>Knowing the node isn't<br><em>enough</em></h2>
+    <div class="amber-line"></div>
+    <div class="two-col">
+      <div class="col-block">
+        <h4>Traditional Index Answers</h4>
+        <ul>
+          <li>Is "Oak" in the database?</li>
+          <li>Where does "Oak" appear?</li>
+          <li>How many times is "Oak" mentioned?</li>
+        </ul>
+      </div>
+      <div class="col-block">
+        <h4>Knowledge Graph Answers</h4>
+        <ul>
+          <li>Oak is a tree (entity type)</li>
+          <li>Grows in temperate forests (context)</li>
+          <li>Related to furniture, paper, wine barrels</li>
+          <li>Found in North America, Europe, Asia</li>
+          <li>Sold via timber markets</li>
+        </ul>
+      </div>
+    </div>
+    <p class="subtitle" style="margin-top:1rem;">Not just knowing the tree — knowing where it grows, where it's sold, and who depends on it.</p>
+  </div>
+
+  <!-- SLIDE 5: WHAT IS A KG -->
+  <div class="slide" id="s4">
+    <div class="label">04 — The Structure</div>
+    <h2>Knowledge Graphs are<br><em>semantic networks</em></h2>
+    <div class="amber-line"></div>
+    <div class="tuple-block">
+      <span class="dim">Every fact is a triple:</span><br>
+      (<span class="hl">Entity A</span>) — [<span class="hl2">relationship</span>] → (<span class="hl">Entity B</span>)<br><br>
+      (<span class="hl">Marie Curie</span>) — [<span class="hl2">BORN_IN</span>] → (<span class="hl">Warsaw</span>)<br>
+      (<span class="hl">Marie Curie</span>) — [<span class="hl2">WON</span>] → (<span class="hl">Nobel Prize</span>)<br>
+      (<span class="hl">Nobel Prize</span>) — [<span class="hl2">AWARDED_BY</span>] → (<span class="hl">Swedish Academy</span>)<br>
+      (<span class="hl">Warsaw</span>) — [<span class="hl2">LOCATED_IN</span>] → (<span class="hl">Poland</span>)
+    </div>
+  </div>
+
+  <!-- SLIDE 6: FAMILY TREE EXAMPLE -->
+  <div class="slide" id="s5">
+    <div class="label">05 — Real World Example</div>
+    <h2>A <em>Family Tree</em> as a Knowledge Graph</h2>
+    <svg class="graph" style="width:700px;height:280px;margin-top:1.5rem;" viewBox="0 0 700 280">
+      <!-- Edges -->
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#f5a623" opacity="0.6"/>
+        </marker>
+      </defs>
+      <!-- Grandparents to parents -->
+      <line x1="175" y1="60" x2="280" y2="140" stroke="#f5a62360" stroke-width="1" marker-end="url(#arrow)"/>
+      <line x1="525" y1="60" x2="420" y2="140" stroke="#f5a62360" stroke-width="1" marker-end="url(#arrow)"/>
+      <!-- Parents to child -->
+      <line x1="280" y1="180" x2="320" y2="230" stroke="#f5a62360" stroke-width="1" marker-end="url(#arrow)"/>
+      <line x1="420" y1="180" x2="380" y2="230" stroke="#f5a62360" stroke-width="1" marker-end="url(#arrow)"/>
+      <!-- Married -->
+      <line x1="320" y1="160" x2="380" y2="160" stroke="#2dd4bf40" stroke-width="1" stroke-dasharray="4,3"/>
+
+      <!-- Grandparent nodes -->
+      <rect x="100" y="30" width="150" height="44" rx="3" fill="#111520" stroke="#c47d10" stroke-width="1"/>
+      <text x="175" y="57" text-anchor="middle" class="node-label">Ahmad (Grandfather)</text>
+
+      <rect x="450" y="30" width="150" height="44" rx="3" fill="#111520" stroke="#c47d10" stroke-width="1"/>
+      <text x="525" y="57" text-anchor="middle" class="node-label">Fatima (Grandmother)</text>
+
+      <!-- Parent nodes -->
+      <rect x="205" y="138" width="130" height="44" rx="3" fill="#111520" stroke="#f5a623" stroke-width="1.5"/>
+      <text x="270" y="165" text-anchor="middle" class="node-label" fill="#f5a623">Khalid (Father)</text>
+
+      <rect x="365" y="138" width="130" height="44" rx="3" fill="#111520" stroke="#f5a623" stroke-width="1.5"/>
+      <text x="430" y="165" text-anchor="middle" class="node-label" fill="#f5a623">Sara (Mother)</text>
+
+      <!-- Child node -->
+      <rect x="295" y="228" width="110" height="44" rx="3" fill="#111520" stroke="#2dd4bf" stroke-width="1.5"/>
+      <text x="350" y="255" text-anchor="middle" class="node-label" fill="#2dd4bf">Layla (Child)</text>
+
+      <!-- Edge labels -->
+      <text x="210" y="103" class="edge-label">PARENT_OF</text>
+      <text x="450" y="103" class="edge-label">PARENT_OF</text>
+      <text x="280" y="215" class="edge-label">PARENT_OF</text>
+      <text x="390" y="215" class="edge-label">PARENT_OF</text>
+      <text x="330" y="153" class="edge-label">MARRIED_TO</text>
+    </svg>
+    <p class="subtitle" style="margin-top:0.8rem;">Every relationship is explicit and traversable. Ask: <em>"Who are Layla's paternal grandparents?"</em> — the graph answers in one hop.</p>
+  </div>
+
+  <!-- SLIDE 7: KG EVOLUTION TIMELINE -->
+  <div class="slide" id="s6">
+    <div class="label">06 — Two Decades of Evolution</div>
+    <h2>Knowledge Graphs didn't appear overnight —<br>they <em>evolved</em> over 20+ years</h2>
+
+    <div style="width:100%;max-width:960px;margin-top:1.6rem;position:relative;">
+
+      <!-- Horizontal spine -->
+      <div style="position:absolute;top:38px;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--amber-dim),var(--amber),var(--teal));opacity:0.4;border-radius:2px;"></div>
+
+      <!-- Timeline row -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;">
+
+        <!-- 2000 -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+          <div style="width:18px;height:18px;border-radius:50%;background:var(--surface);border:2px solid var(--amber-dim);position:relative;z-index:1;margin-bottom:0.7rem;"></div>
+          <div style="font-size:0.875rem;color:var(--amber-dim);letter-spacing:0.1em;margin-bottom:0.35rem;font-weight:500;">~2000</div>
+          <div style="font-family:'Fraunces',serif;font-size:0.9375rem;color:var(--text);margin-bottom:0.3rem;text-align:center;">WordNet &amp; Cyc</div>
+          <div style="font-size:0.8125rem;color:var(--text-dim);text-align:center;line-height:1.5;padding:0 0.3rem;">Hand-curated<br>ontologies.<br>Massive effort,<br>limited reach.</div>
+        </div>
+
+        <!-- 2004 -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+          <div style="width:18px;height:18px;border-radius:50%;background:var(--surface);border:2px solid var(--amber-dim);position:relative;z-index:1;margin-bottom:0.7rem;"></div>
+          <div style="font-size:0.875rem;color:var(--amber-dim);letter-spacing:0.1em;margin-bottom:0.35rem;font-weight:500;">2004</div>
+          <div style="font-family:'Fraunces',serif;font-size:0.9375rem;color:var(--text);margin-bottom:0.3rem;text-align:center;">RDF &amp; OWL</div>
+          <div style="font-size:0.8125rem;color:var(--text-dim);text-align:center;line-height:1.5;padding:0 0.3rem;">W3C standards for<br>the Semantic Web.<br>Triples as a<br>universal format.</div>
+        </div>
+
+        <!-- 2007 — Neo4j -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+          <div style="width:22px;height:22px;border-radius:50%;background:var(--amber);border:2px solid var(--amber);position:relative;z-index:1;margin-bottom:0.7rem;box-shadow:0 0 12px rgba(245,166,35,0.5);"></div>
+          <div style="font-size:0.875rem;color:var(--amber);letter-spacing:0.1em;margin-bottom:0.35rem;font-weight:500;">2007 ★</div>
+          <div style="font-family:'Fraunces',serif;font-size:1rem;color:var(--amber);margin-bottom:0.3rem;text-align:center;">Neo4j</div>
+          <div style="font-size:0.8125rem;color:var(--text-dim);text-align:center;line-height:1.5;padding:0 0.3rem;"><span style="color:var(--amber);font-size:0.75rem;">FOUNDER</span><br>First native graph<br>database. Cypher<br>query language.<br>Still #1 today.</div>
+        </div>
+
+        <!-- 2012 — Google KG -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+          <div style="width:22px;height:22px;border-radius:50%;background:var(--teal);border:2px solid var(--teal);position:relative;z-index:1;margin-bottom:0.7rem;box-shadow:0 0 12px rgba(45,212,191,0.4);"></div>
+          <div style="font-size:0.875rem;color:var(--teal);letter-spacing:0.1em;margin-bottom:0.35rem;font-weight:500;">2012 ★</div>
+          <div style="font-family:'Fraunces',serif;font-size:1rem;color:var(--teal);margin-bottom:0.3rem;text-align:center;">Google KG</div>
+          <div style="font-size:0.8125rem;color:var(--text-dim);text-align:center;line-height:1.5;padding:0 0.3rem;"><span style="color:var(--teal);font-size:0.75rem;">MAINSTREAM</span><br>Coined the term<br>"Knowledge Graph".<br>500M+ entities<br>at launch.</div>
+        </div>
+
+        <!-- 2014 — NetworkX -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+          <div style="width:20px;height:20px;border-radius:50%;background:var(--surface);border:2px solid #a78bfa;position:relative;z-index:1;margin-bottom:0.7rem;box-shadow:0 0 8px rgba(167,139,250,0.3);"></div>
+          <div style="font-size:0.875rem;color:#a78bfa;letter-spacing:0.1em;margin-bottom:0.35rem;font-weight:500;">2014</div>
+          <div style="font-family:'Fraunces',serif;font-size:0.9375rem;color:#a78bfa;margin-bottom:0.3rem;text-align:center;">NetworkX</div>
+          <div style="font-size:0.8125rem;color:var(--text-dim);text-align:center;line-height:1.5;padding:0 0.3rem;"><span style="color:#a78bfa;font-size:0.75rem;">IN-MEMORY</span><br>Python library.<br>No server needed.<br>Great for research<br>&amp; prototyping.</div>
+        </div>
+
+        <!-- 2017 — Embeddings era -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+          <div style="width:18px;height:18px;border-radius:50%;background:var(--surface);border:2px solid var(--amber-dim);position:relative;z-index:1;margin-bottom:0.7rem;"></div>
+          <div style="font-size:0.875rem;color:var(--amber-dim);letter-spacing:0.1em;margin-bottom:0.35rem;font-weight:500;">2017</div>
+          <div style="font-family:'Fraunces',serif;font-size:0.9375rem;color:var(--text);margin-bottom:0.3rem;text-align:center;">Graph + Vectors</div>
+          <div style="font-size:0.8125rem;color:var(--text-dim);text-align:center;line-height:1.5;padding:0 0.3rem;">Word2Vec meets<br>graph structure.<br>Semantic edges<br>become possible.</div>
+        </div>
+
+        <!-- 2023 — LLM era -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+          <div style="width:22px;height:22px;border-radius:50%;background:var(--teal);border:2px solid var(--teal);position:relative;z-index:1;margin-bottom:0.7rem;box-shadow:0 0 14px rgba(45,212,191,0.6);"></div>
+          <div style="font-size:0.875rem;color:var(--teal);letter-spacing:0.1em;margin-bottom:0.35rem;font-weight:500;">2023+ ★</div>
+          <div style="font-family:'Fraunces',serif;font-size:1rem;color:var(--teal);margin-bottom:0.3rem;text-align:center;">LLM + GraphRAG</div>
+          <div style="font-size:0.8125rem;color:var(--text-dim);text-align:center;line-height:1.5;padding:0 0.3rem;"><span style="color:var(--teal);font-size:0.75rem;">NOW</span><br>AI builds the graph<br>automatically.<br>The bottleneck<br>dissolves.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Bottom note -->
+    <div style="margin-top:1.4rem;display:flex;gap:2rem;align-items:center;font-size:0.8125rem;color:var(--text-dim);">
+      <span><span style="color:var(--amber);">★</span> Neo4j — persistent, production-grade, Cypher queries, ACID compliant</span>
+      <span style="color:var(--muted);">|</span>
+      <span><span style="color:#a78bfa;">◆</span> NetworkX — in-memory, Python-native, no server, ideal for prototyping</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 7b: THE BOTTLENECK (restored) -->
+  <div class="slide" id="s6b">
+    <div class="label">07 — The Old Problem</div>
+    <h2>Why Knowledge Graphs<br>stayed <em>niche</em></h2>
+    <div class="amber-line"></div>
+    <div class="pull-quote">
+      "Someone had to sit down and manually encode every entity, every relationship, every tuple. Domain experts. Hours of labeling. Expensive to build, expensive to maintain."
+    </div>
+    <div class="cards" style="margin-top:1.5rem;grid-template-columns:1fr 1fr;">
+      <div class="card">
+        <div class="card-num">The problem</div>
+        <h3>Manual Construction</h3>
+        <p>Each triple (A, rel, B) required human curation. Ontologies took years to build. Freebase, Cyc, WordNet — massive team efforts.</p>
+      </div>
+      <div class="card">
+        <div class="card-num">The consequence</div>
+        <h3>Limited Scale</h3>
+        <p>Only well-funded organizations (Google, DBpedia) could build large KGs. The rest relied on keyword search and hoped for the best.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: EMBEDDINGS -->
+  <div class="slide" id="s7">
+    <div class="label">08 — The Breakthrough</div>
+    <h2>Embeddings: the <em>semantic<br>hash table</em></h2>
+    <div class="amber-line"></div>
+    <div class="two-col">
+      <div class="col-block">
+        <h4>What Embeddings Do</h4>
+        <ul>
+          <li>Convert text → dense vector (e.g. 1024-dim)</li>
+          <li>Semantically similar text → nearby vectors</li>
+          <li>"King" − "Man" + "Woman" ≈ "Queen"</li>
+          <li>Relationships encoded in geometry</li>
+        </ul>
+      </div>
+      <div class="col-block">
+        <h4>Why It Matters for KGs</h4>
+        <ul>
+          <li>Entities can be auto-clustered by meaning</li>
+          <li>Relationships inferred from vector proximity</li>
+          <li>No more manual tuple encoding per item</li>
+          <li>Scales to billions of documents</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tuple-block" style="margin-top:1.2rem;border-left-color:var(--amber);">
+      <span class="dim">Hash table:</span> key → bucket (exact match)<br>
+      <span class="hl2">Semantic hash table:</span> meaning → neighbourhood (fuzzy, contextual)
+    </div>
+  </div>
+
+  <!-- SLIDE 10: AI UNLOCKS KG -->
+  <div class="slide" id="s8">
+    <div class="label">09 — The Unlock</div>
+    <h2>AI makes KG construction<br><em>automatic</em></h2>
+    <div class="amber-line"></div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-num">Step 01</div>
+        <h3>Entity Extraction</h3>
+        <p>LLMs identify key concepts, proper nouns, and domain objects from raw text automatically.</p>
+      </div>
+      <div class="card">
+        <div class="card-num">Step 02</div>
+        <h3>Relationship Inference</h3>
+        <p>Semantic understanding lets models infer how entities relate — without hand-coded rules.</p>
+      </div>
+      <div class="card">
+        <div class="card-num">Step 03</div>
+        <h3>Graph Population</h3>
+        <p>Triples are auto-generated and ingested into graph DBs like Neo4j at scale.</p>
+      </div>
+    </div>
+    <p class="subtitle" style="margin-top:1rem;">The #1 reason KGs weren't widely adopted — <em>just dissolved.</em></p>
+  </div>
+
+  <!-- SLIDE 11: DOCUMENT → GRAPH -->
+  <div class="slide" id="s9">
+    <div class="label">10 — The Transformation</div>
+    <h2>A document becomes<br>a <em>universe of meaning</em></h2>
+    <div class="amber-line"></div>
+    <div class="two-col">
+      <div class="col-block">
+        <h4>Before: Flat Document</h4>
+        <ul>
+          <li>Keyword matching only</li>
+          <li>No understanding of context</li>
+          <li>Search: "procurement" → all docs with that word</li>
+          <li>Lost: who, what, why, how things connect</li>
+        </ul>
+      </div>
+      <div class="col-block">
+        <h4>After: Knowledge Graph</h4>
+        <ul>
+          <li>Key concepts extracted as entities</li>
+          <li>Relationships mapped explicitly</li>
+          <li>Query: "suppliers connected to delayed orders"</li>
+          <li>Found: chains of causality, not just keywords</li>
+        </ul>
+      </div>
+    </div>
+    <p class="subtitle" style="margin-top:1rem;">The same document. Infinitely richer access.</p>
+  </div>
+
+  <!-- SLIDE 12: RAG + KG -->
+  <div class="slide" id="s10">
+    <div class="label">11 — Modern Application</div>
+    <h2>Knowledge Graphs<br>+ <em>RAG</em></h2>
+    <div class="amber-line"></div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-num">Vector RAG</div>
+        <h3>Semantic Similarity</h3>
+        <p>Find chunks that are semantically close to the query. Great for fuzzy, open-ended questions.</p>
+      </div>
+      <div class="card">
+        <div class="card-num">Graph RAG</div>
+        <h3>Relationship Traversal</h3>
+        <p>Navigate entity connections. Great for "who connects to whom," multi-hop reasoning, causal chains.</p>
+      </div>
+      <div class="card">
+        <div class="card-num">Hybrid</div>
+        <h3>Best of Both</h3>
+        <p>Vector retrieval surfaces candidates. Graph context enriches them. Reranker picks the best. Maximum precision.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 13: INGESTION PIPELINE -->
+  <div class="slide" id="s12">
+    <div class="label">12 — Tech Internals · Ingestion Pipeline</div>
+    <h2>One document.<br><em>Two stores.</em> Built in parallel.</h2>
+
+    <div style="width:100%;max-width:940px;margin-top:1.4rem;">
+      <svg viewBox="0 0 940 310" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;overflow:visible;">
+        <defs>
+          <marker id="arr-a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#f5a623" opacity="0.8"/></marker>
+          <marker id="arr-t" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#2dd4bf" opacity="0.8"/></marker>
+          <marker id="arr-p" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#a78bfa" opacity="0.8"/></marker>
+          <marker id="arr-g" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#4ade80" opacity="0.8"/></marker>
+        </defs>
+
+        <!-- ── DOCUMENT ── -->
+        <rect x="10" y="115" width="110" height="70" rx="5" fill="#111520" stroke="#f5a623" stroke-width="2"/>
+        <text x="65" y="144" text-anchor="middle" font-family="DM Mono" font-size="12" fill="#f5a623" font-weight="500">Document</text>
+        <text x="65" y="162" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">PDF / TXT</text>
+        <text x="65" y="177" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">DOCX etc.</text>
+
+        <!-- doc → chunker -->
+        <line x1="120" y1="150" x2="168" y2="150" stroke="#f5a623" stroke-width="1.5" marker-end="url(#arr-a)"/>
+
+        <!-- ── CHUNKER ── -->
+        <rect x="170" y="115" width="110" height="70" rx="5" fill="#111520" stroke="#f5a623" stroke-width="1.5"/>
+        <text x="225" y="144" text-anchor="middle" font-family="DM Mono" font-size="12" fill="#f5a623">Chunker</text>
+        <text x="225" y="162" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Semantic</text>
+        <text x="225" y="177" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">splitting</text>
+
+        <!-- chunker forks: up to vector track, down to graph track -->
+        <line x1="280" y1="140" x2="318" y2="90" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#arr-t)"/>
+        <line x1="280" y1="162" x2="318" y2="218" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arr-p)"/>
+
+        <!-- ═══ VECTOR TRACK (top) ═══ -->
+        <!-- label -->
+        <text x="330" y="24" font-family="DM Mono" font-size="10" fill="#2dd4bf" opacity="0.7" letter-spacing="2">VECTOR TRACK</text>
+        <line x1="330" y1="28" x2="920" y2="28" stroke="#2dd4bf" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.3"/>
+
+        <!-- BGE Embedder -->
+        <rect x="320" y="55" width="130" height="70" rx="5" fill="#111520" stroke="#2dd4bf" stroke-width="1.5"/>
+        <text x="385" y="80" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#2dd4bf">BGE Embedder</text>
+        <text x="385" y="97" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">bge-large-en</text>
+        <text x="385" y="112" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">1024 dims</text>
+
+        <!-- BGE → Qdrant -->
+        <line x1="450" y1="90" x2="498" y2="90" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#arr-t)"/>
+
+        <!-- Qdrant -->
+        <rect x="500" y="55" width="130" height="70" rx="5" fill="#111520" stroke="#2dd4bf" stroke-width="2"/>
+        <text x="565" y="80" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#2dd4bf" font-weight="500">Qdrant</text>
+        <text x="565" y="97" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Vector store</text>
+        <text x="565" y="112" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">cosine · HNSW</text>
+
+        <!-- Qdrant → stored badge -->
+        <line x1="630" y1="90" x2="678" y2="90" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#arr-t)"/>
+        <rect x="680" y="68" width="110" height="44" rx="20" fill="#2dd4bf22" stroke="#2dd4bf" stroke-width="1"/>
+        <text x="735" y="86" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#2dd4bf">Chunks +</text>
+        <text x="735" y="101" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#2dd4bf">Vectors stored</text>
+
+        <!-- ═══ GRAPH TRACK (bottom) ═══ -->
+        <text x="330" y="200" font-family="DM Mono" font-size="10" fill="#a78bfa" opacity="0.7" letter-spacing="2">GRAPH TRACK</text>
+        <line x1="330" y1="204" x2="920" y2="204" stroke="#a78bfa" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.3"/>
+
+        <!-- LLM Entity Extractor -->
+        <rect x="320" y="215" width="130" height="70" rx="5" fill="#111520" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="385" y="238" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#a78bfa">LLM Extractor</text>
+        <text x="385" y="255" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Entities +</text>
+        <text x="385" y="270" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Relations</text>
+
+        <!-- Extractor → Rel inference -->
+        <line x1="450" y1="250" x2="498" y2="250" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arr-p)"/>
+
+        <!-- Rel Inference -->
+        <rect x="500" y="215" width="130" height="70" rx="5" fill="#111520" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="565" y="238" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#a78bfa">Rel. Inference</text>
+        <text x="565" y="255" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Triple builder</text>
+        <text x="565" y="270" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">(A)–[R]→(B)</text>
+
+        <!-- Rel inference → Neo4j -->
+        <line x1="630" y1="250" x2="678" y2="250" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arr-p)"/>
+
+        <!-- Neo4j -->
+        <rect x="680" y="215" width="130" height="70" rx="5" fill="#111520" stroke="#4ade80" stroke-width="2"/>
+        <text x="745" y="238" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#4ade80" font-weight="500">Neo4j</text>
+        <text x="745" y="255" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Graph store</text>
+        <text x="745" y="270" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Cypher · ACID</text>
+
+        <!-- Neo4j → stored badge -->
+        <line x1="810" y1="250" x2="848" y2="250" stroke="#4ade80" stroke-width="1.5" marker-end="url(#arr-g)"/>
+        <rect x="850" y="228" width="82" height="44" rx="20" fill="#4ade8022" stroke="#4ade80" stroke-width="1"/>
+        <text x="891" y="246" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#4ade80">Nodes +</text>
+        <text x="891" y="261" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#4ade80">Edges stored</text>
+
+        <!-- cross-link: vector chunks reference graph entities -->
+        <path d="M 735 215 Q 735 160 650 140 Q 620 130 630 112" stroke="#f5a623" stroke-width="1" stroke-dasharray="5,3" fill="none" opacity="0.4" marker-end="url(#arr-a)"/>
+        <text x="718" y="173" font-family="DM Mono" font-size="9" fill="#f5a623" opacity="0.6">entity_refs</text>
+        <text x="718" y="185" font-family="DM Mono" font-size="9" fill="#f5a623" opacity="0.6">cross-linked</text>
+      </svg>
+    </div>
+
+    <!-- legend -->
+    <div style="display:flex;gap:2rem;font-size:0.8125rem;color:var(--text-dim);margin-top:0.6rem;">
+      <span><span style="color:#2dd4bf;">━</span> Vector track → Qdrant</span>
+      <span><span style="color:#a78bfa;">━</span> Graph track → Neo4j</span>
+      <span><span style="color:#f5a623;opacity:0.6;">╌</span> Cross-link: chunks carry entity refs</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 14: QUERY PIPELINE -->
+  <div class="slide" id="s13">
+    <div class="label">13 — Tech Internals · Query Pipeline</div>
+    <h2>One query.<br><em>Two retrievers.</em> One answer.</h2>
+
+    <div style="width:100%;max-width:940px;margin-top:1.4rem;">
+      <svg viewBox="0 0 940 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;overflow:visible;">
+        <defs>
+          <marker id="qa" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#f5a623" opacity="0.8"/></marker>
+          <marker id="qt" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#2dd4bf" opacity="0.8"/></marker>
+          <marker id="qp" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#a78bfa" opacity="0.8"/></marker>
+          <marker id="qg" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#4ade80" opacity="0.8"/></marker>
+          <marker id="qo" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#f87171" opacity="0.8"/></marker>
+        </defs>
+
+        <!-- USER QUERY -->
+        <rect x="8" y="118" width="112" height="70" rx="5" fill="#111520" stroke="#f5a623" stroke-width="2"/>
+        <text x="64" y="144" text-anchor="middle" font-family="DM Mono" font-size="11.5" fill="#f5a623" font-weight="500">User Query</text>
+        <text x="64" y="162" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">"What are the</text>
+        <text x="64" y="177" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">retry rules?"</text>
+
+        <!-- query → BGE embed -->
+        <line x1="120" y1="153" x2="168" y2="153" stroke="#f5a623" stroke-width="1.5" marker-end="url(#qa)"/>
+
+        <!-- BGE EMBED (query) -->
+        <rect x="170" y="118" width="120" height="70" rx="5" fill="#111520" stroke="#f5a623" stroke-width="1.5"/>
+        <text x="230" y="144" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#f5a623">BGE Embed</text>
+        <text x="230" y="162" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Query →</text>
+        <text x="230" y="177" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">1024-dim vec</text>
+
+        <!-- embed forks up/down -->
+        <line x1="290" y1="138" x2="328" y2="88" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#qt)"/>
+        <line x1="290" y1="170" x2="328" y2="228" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#qp)"/>
+
+        <!-- ═══ VECTOR PATH ═══ -->
+        <text x="340" y="22" font-family="DM Mono" font-size="10" fill="#2dd4bf" opacity="0.7" letter-spacing="2">VECTOR PATH — QDRANT</text>
+        <line x1="340" y1="27" x2="700" y2="27" stroke="#2dd4bf" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.3"/>
+
+        <!-- Qdrant ANN search -->
+        <rect x="330" y="50" width="135" height="70" rx="5" fill="#111520" stroke="#2dd4bf" stroke-width="1.5"/>
+        <text x="397" y="75" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#2dd4bf">Qdrant ANN</text>
+        <text x="397" y="92" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Top-K cosine</text>
+        <text x="397" y="107" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">similar chunks</text>
+
+        <!-- Qdrant → results bubble -->
+        <line x1="465" y1="85" x2="503" y2="85" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#qt)"/>
+        <rect x="505" y="62" width="110" height="46" rx="5" fill="#2dd4bf15" stroke="#2dd4bf" stroke-width="1"/>
+        <text x="560" y="82" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#2dd4bf">Semantic</text>
+        <text x="560" y="97" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#2dd4bf">chunk hits</text>
+
+        <!-- ═══ GRAPH PATH ═══ -->
+        <text x="340" y="212" font-family="DM Mono" font-size="10" fill="#a78bfa" opacity="0.7" letter-spacing="2">GRAPH PATH — NEO4J</text>
+        <line x1="340" y1="217" x2="700" y2="217" stroke="#a78bfa" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.3"/>
+
+        <!-- Cypher query builder -->
+        <rect x="330" y="228" width="135" height="70" rx="5" fill="#111520" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="397" y="251" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#a78bfa">Cypher Query</text>
+        <text x="397" y="268" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">MATCH (n)-</text>
+        <text x="397" y="283" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">[r]→(m)</text>
+
+        <!-- Cypher → results bubble -->
+        <line x1="465" y1="263" x2="503" y2="263" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#qp)"/>
+        <rect x="505" y="240" width="110" height="46" rx="5" fill="#a78bfa15" stroke="#a78bfa" stroke-width="1"/>
+        <text x="560" y="260" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#a78bfa">Graph hops</text>
+        <text x="560" y="275" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#a78bfa">context</text>
+
+        <!-- both results converge to reranker -->
+        <line x1="615" y1="85" x2="658" y2="148" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#qt)"/>
+        <line x1="615" y1="263" x2="658" y2="180" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#qp)"/>
+
+        <!-- RERANKER -->
+        <rect x="660" y="128" width="120" height="70" rx="5" fill="#111520" stroke="#4ade80" stroke-width="2"/>
+        <text x="720" y="153" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#4ade80" font-weight="500">Reranker</text>
+        <text x="720" y="170" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">BGE reranker</text>
+        <text x="720" y="185" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">fused context</text>
+
+        <!-- reranker → LLM -->
+        <line x1="780" y1="163" x2="818" y2="163" stroke="#4ade80" stroke-width="1.5" marker-end="url(#qg)"/>
+
+        <!-- LLM -->
+        <rect x="820" y="128" width="110" height="70" rx="5" fill="#111520" stroke="#f87171" stroke-width="2"/>
+        <text x="875" y="153" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#f87171" font-weight="500">LLM</text>
+        <text x="875" y="170" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Internal proxy</text>
+        <text x="875" y="185" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">OpenAI-compat</text>
+
+        <!-- LLM → answer (below) -->
+        <line x1="875" y1="198" x2="875" y2="238" stroke="#f87171" stroke-width="1.5" marker-end="url(#qo)"/>
+        <rect x="822" y="240" width="106" height="44" rx="20" fill="#f8717122" stroke="#f87171" stroke-width="1"/>
+        <text x="875" y="259" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#f87171">Answer</text>
+        <text x="875" y="274" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#f87171">grounded</text>
+      </svg>
+    </div>
+
+    <div style="display:flex;gap:2rem;font-size:0.8125rem;color:var(--text-dim);margin-top:0.5rem;">
+      <span><span style="color:#2dd4bf;">━</span> Vector path: semantic similarity</span>
+      <span><span style="color:#a78bfa;">━</span> Graph path: relationship traversal</span>
+      <span><span style="color:#4ade80;">━</span> Reranker fuses both</span>
+      <span><span style="color:#f87171;">━</span> LLM generates grounded answer</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 15: DATA MODEL -->
+  <div class="slide" id="s14">
+    <div class="label">14 — Tech Internals · Data Model</div>
+    <h2>What actually lives in<br><em>Neo4j</em> and <em>Qdrant</em></h2>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;width:100%;max-width:940px;margin-top:1.2rem;">
+
+      <!-- NEO4J PANEL -->
+      <div style="background:var(--surface);border:1px solid rgba(74,222,128,0.2);border-top:2px solid #4ade80;border-radius:4px;padding:1.2rem;">
+        <div style="font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#4ade80;margin-bottom:0.9rem;">Neo4j — Graph Store</div>
+
+        <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.4rem;">Node Labels</div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:1rem;">
+          <span style="background:#4ade8018;border:1px solid #4ade8040;color:#4ade80;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">:Document</span>
+          <span style="background:#4ade8018;border:1px solid #4ade8040;color:#4ade80;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">:Entity</span>
+          <span style="background:#4ade8018;border:1px solid #4ade8040;color:#4ade80;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">:Concept</span>
+          <span style="background:#4ade8018;border:1px solid #4ade8040;color:#4ade80;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">:Chunk</span>
+        </div>
+
+        <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.4rem;">Relationship Types</div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:1rem;">
+          <span style="background:#a78bfa18;border:1px solid #a78bfa40;color:#a78bfa;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">MENTIONS</span>
+          <span style="background:#a78bfa18;border:1px solid #a78bfa40;color:#a78bfa;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">RELATED_TO</span>
+          <span style="background:#a78bfa18;border:1px solid #a78bfa40;color:#a78bfa;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">PART_OF</span>
+          <span style="background:#a78bfa18;border:1px solid #a78bfa40;color:#a78bfa;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">DEPENDS_ON</span>
+        </div>
+
+        <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.5rem;">Sample Cypher Query</div>
+        <div style="background:#0a0c10;border:1px solid rgba(255,255,255,0.06);border-radius:3px;padding:0.8rem;font-size:0.7rem;line-height:1.9;">
+          <span style="color:#a78bfa;">MATCH</span> <span style="color:#e2e8f0;">(e:Entity)</span><span style="color:#718096;">-</span><span style="color:#f5a623;">[r:RELATED_TO]</span><span style="color:#718096;">-&gt;</span><span style="color:#e2e8f0;">(c:Concept)</span><br>
+          <span style="color:#a78bfa;">WHERE</span> <span style="color:#4ade80;">e.name</span> <span style="color:#f5a623;">=</span> <span style="color:#2dd4bf;">"IMS"</span><br>
+          <span style="color:#a78bfa;">RETURN</span> <span style="color:#4ade80;">e, r, c</span><br>
+          <span style="color:#a78bfa;">LIMIT</span> <span style="color:#f5a623;">10</span>
+        </div>
+      </div>
+
+      <!-- QDRANT PANEL -->
+      <div style="background:var(--surface);border:1px solid rgba(45,212,191,0.2);border-top:2px solid #2dd4bf;border-radius:4px;padding:1.2rem;">
+        <div style="font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#2dd4bf;margin-bottom:0.9rem;">Qdrant — Vector Store</div>
+
+        <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.4rem;">Collection Config</div>
+        <div style="background:#0a0c10;border:1px solid rgba(255,255,255,0.06);border-radius:3px;padding:0.8rem;font-size:0.7rem;line-height:1.9;margin-bottom:1rem;">
+          <span style="color:#718096;">collection: </span><span style="color:#2dd4bf;">"rag_chunks"</span><br>
+          <span style="color:#718096;">vector_size: </span><span style="color:#f5a623;">1024</span><br>
+          <span style="color:#718096;">distance: </span><span style="color:#4ade80;">Cosine</span><br>
+          <span style="color:#718096;">index: </span><span style="color:#a78bfa;">HNSW</span>  <span style="color:#4a5568;">// fast ANN</span>
+        </div>
+
+        <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.4rem;">Payload (Metadata) Schema</div>
+        <div style="background:#0a0c10;border:1px solid rgba(255,255,255,0.06);border-radius:3px;padding:0.8rem;font-size:0.7rem;line-height:1.9;">
+          <span style="color:#718096;">doc_id: </span><span style="color:#2dd4bf;">"ltesms_v25"</span><br>
+          <span style="color:#718096;">chunk_id: </span><span style="color:#f5a623;">"chunk_042"</span><br>
+          <span style="color:#718096;">text: </span><span style="color:#2dd4bf;">"The device shall..."</span><br>
+          <span style="color:#718096;">entity_refs: </span><span style="color:#a78bfa;">["IMS", "DUT", "SIP"]</span><br>
+          <span style="color:#718096;">neo4j_ids: </span><span style="color:#4ade80;">[4821, 4822, 4830]</span>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size:0.8125rem;color:var(--text-dim);text-align:center;margin-top:0.9rem;">
+      The <span style="color:#f5a623;">entity_refs</span> and <span style="color:#f5a623;">neo4j_ids</span> fields are the bridge — vector chunks know which graph nodes they came from, enabling cross-store joins at query time.
+    </p>
+  </div>
+
+  <!-- SLIDE 16: CLOSING -->
+  <div class="slide" id="s11">
+    <div class="label">Knowledge Graphs — 2026</div>
+    <h1>The <em>bottleneck</em><br>is gone.</h1>
+    <div class="amber-line"></div>
+    <p class="subtitle">We went from manually encoding every relationship... to LLMs that read a document and build the graph for you. What took teams of experts years now takes seconds. The question is no longer <em>can we build it</em> — it's what do we build on top of it.</p>
+    <div style="margin-top:2rem;font-size: 0.875rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;">Questions welcome</div>
+  </div>
+
+</div>
+
+<!-- NAVIGATION -->
+<div class="nav">
+  <button id="prev" onclick="navigate(-1)">←</button>
+  <div class="nav-dots" id="dots"></div>
+  <span class="slide-counter" id="counter">1 / 16</span>
+  <button id="next" onclick="navigate(1)">→</button>
+</div>
+
+<script>
+  const total = 16;
+  let current = 0;
+
+  const dotsEl = document.getElementById('dots');
+  const counterEl = document.getElementById('counter');
+  const progressEl = document.getElementById('progress');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+
+  // Build dots
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotsEl.appendChild(d);
+  }
+
+  function goTo(n) {
+    const slides = document.querySelectorAll('.slide');
+    slides[current].classList.remove('active');
+    slides[current].classList.add('exit');
+    setTimeout(() => slides[current - (current - n)].classList.remove('exit'), 500);
+
+    // Fix: properly remove exit from old slide
+    const oldIdx = current;
+    current = n;
+
+    slides[oldIdx].classList.remove('active');
+    setTimeout(() => slides[oldIdx].classList.remove('exit'), 500);
+    slides[oldIdx].classList.add('exit');
+    slides[current].classList.add('active');
+
+    // Update dots
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+    });
+
+    counterEl.textContent = (current + 1) + ' / 16';
+    progressEl.style.width = ((current + 1) / total * 100) + '%';
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === total - 1;
+  }
+
+  function navigate(dir) {
+    const n = current + dir;
+    if (n >= 0 && n < total) goTo(n);
+  }
+
+  // Init
+  prevBtn.disabled = true;
+  progressEl.style.width = (1 / total * 100) + '%';
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') navigate(1);
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') navigate(-1);
+  });
+</script>
+</body>
+</html>

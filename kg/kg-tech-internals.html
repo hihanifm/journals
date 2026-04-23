@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KG + RAG — Tech Internals</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,700;0,900;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b0f;
+    --surface: #0f1520;
+    --amber: #f5a623;
+    --amber-dim: #c47d10;
+    --teal: #2dd4bf;
+    --green: #4ade80;
+    --purple: #a78bfa;
+    --red: #f87171;
+    --muted: #4a5568;
+    --text: #e2e8f0;
+    --text-dim: #718096;
+    --line: rgba(45,212,191,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; overflow: hidden; height: 100vh; width: 100vw; }
+
+  .grid-bg { position: fixed; inset: 0; background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+  .vignette { position: fixed; inset: 0; background: radial-gradient(ellipse at center, transparent 40%, var(--bg) 100%); pointer-events: none; z-index: 1; }
+  .progress-bar { position: fixed; top: 0; left: 0; height: 2px; background: var(--teal); transition: width 0.4s ease; z-index: 200; }
+  .key-hint { position: fixed; top: 1.5rem; right: 2rem; font-size: 0.8125rem; color: var(--muted); z-index: 100; letter-spacing: 0.1em; }
+  .deck-badge { position: fixed; top: 1.5rem; left: 2rem; font-size: 0.8125rem; color: var(--teal); z-index: 100; letter-spacing: 0.1em; border: 1px solid rgba(45,212,191,0.35); padding: 0.2rem 0.7rem; border-radius: 3px; }
+
+  .nav { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 1rem; z-index: 100; background: rgba(15,21,32,0.92); border: 1px solid var(--line); padding: 0.6rem 1.2rem; border-radius: 999px; backdrop-filter: blur(12px); }
+  .nav button { background: none; border: none; color: var(--teal); cursor: pointer; font-size: 1.375rem; padding: 0.2rem 0.6rem; transition: opacity 0.2s; font-family: 'DM Mono', monospace; }
+  .nav button:hover { opacity: 0.7; }
+  .nav button:disabled { opacity: 0.2; cursor: default; }
+  .slide-counter { color: var(--text-dim); font-size: 0.9375rem; min-width: 60px; text-align: center; }
+  .nav-dots { display: flex; gap: 6px; align-items: center; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); cursor: pointer; transition: all 0.3s; }
+  .dot.active { background: var(--teal); width: 18px; border-radius: 3px; }
+
+  .slides-wrapper { width: 100vw; height: 100vh; position: relative; }
+  .slide { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3.5rem 5rem; opacity: 0; pointer-events: none; transition: opacity 0.5s ease, transform 0.5s ease; transform: translateY(20px); z-index: 2; }
+  .slide.active { opacity: 1; pointer-events: all; transform: translateY(0); }
+  .slide.exit { opacity: 0; transform: translateY(-20px); }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .slide.active > * { animation: fadeUp 0.5s ease both; }
+  .slide.active > *:nth-child(1) { animation-delay: 0.05s; }
+  .slide.active > *:nth-child(2) { animation-delay: 0.15s; }
+  .slide.active > *:nth-child(3) { animation-delay: 0.25s; }
+  .slide.active > *:nth-child(4) { animation-delay: 0.35s; }
+  .slide.active > *:nth-child(5) { animation-delay: 0.45s; }
+
+  .label { font-size: 0.875rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--teal); margin-bottom: 1.1rem; opacity: 0.9; }
+  h1 { font-family: 'Fraunces', serif; font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 900; line-height: 1.05; text-align: center; }
+  h1 em { font-style: italic; color: var(--teal); }
+  h2 { font-family: 'Fraunces', serif; font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 700; line-height: 1.2; text-align: center; margin-bottom: 0.6rem; }
+  h2 em { font-style: italic; color: var(--teal); }
+  .teal-line { width: 60px; height: 2px; background: var(--teal); margin: 1rem auto; }
+  .subtitle { color: var(--text-dim); font-size: clamp(0.875rem, 1.3vw, 1rem); text-align: center; max-width: 620px; line-height: 1.7; margin-top: 1rem; }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="vignette"></div>
+<div class="progress-bar" id="progress"></div>
+<div class="key-hint">← → to navigate</div>
+<div class="deck-badge">TECH INTERNALS — KG + RAG</div>
+
+<div class="slides-wrapper" id="slides">
+
+  <!-- SLIDE 1: TITLE -->
+  <div class="slide active" id="t0">
+    <div class="label">For the Engineers in the Room</div>
+    <h1>KG + RAG<br><em>Tech Internals</em></h1>
+    <div class="teal-line"></div>
+    <p class="subtitle">A deep dive into the actual architecture — ingestion pipelines, query flows, and the data model that ties Neo4j and Qdrant together.</p>
+    <div style="margin-top:2rem;display:flex;gap:1.5rem;font-size:0.875rem;color:var(--text-dim);">
+      <span style="border:1px solid rgba(45,212,191,0.3);padding:0.3rem 0.8rem;border-radius:3px;color:var(--teal);">Qdrant</span>
+      <span style="border:1px solid rgba(74,222,128,0.3);padding:0.3rem 0.8rem;border-radius:3px;color:var(--green);">Neo4j</span>
+      <span style="border:1px solid rgba(167,139,250,0.3);padding:0.3rem 0.8rem;border-radius:3px;color:var(--purple);">BGE Embeddings</span>
+      <span style="border:1px solid rgba(248,113,113,0.3);padding:0.3rem 0.8rem;border-radius:3px;color:var(--red);">LLM Proxy</span>
+      <span style="border:1px solid rgba(245,166,35,0.3);padding:0.3rem 0.8rem;border-radius:3px;color:var(--amber);">LangChain</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: INGESTION PIPELINE -->
+  <div class="slide" id="t1">
+    <div class="label">01 — Ingestion Pipeline</div>
+    <h2>One document.<br><em>Two stores.</em> Built in parallel.</h2>
+
+    <div style="width:100%;max-width:940px;margin-top:1.4rem;">
+      <svg viewBox="0 0 940 310" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;overflow:visible;">
+        <defs>
+          <marker id="arr-a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#f5a623" opacity="0.8"/></marker>
+          <marker id="arr-t" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#2dd4bf" opacity="0.8"/></marker>
+          <marker id="arr-p" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#a78bfa" opacity="0.8"/></marker>
+          <marker id="arr-g" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#4ade80" opacity="0.8"/></marker>
+        </defs>
+
+        <!-- DOCUMENT -->
+        <rect x="10" y="115" width="110" height="70" rx="5" fill="#0f1520" stroke="#f5a623" stroke-width="2"/>
+        <text x="65" y="144" text-anchor="middle" font-family="DM Mono" font-size="12" fill="#f5a623" font-weight="500">Document</text>
+        <text x="65" y="162" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">PDF / TXT</text>
+        <text x="65" y="177" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">DOCX etc.</text>
+
+        <line x1="120" y1="150" x2="168" y2="150" stroke="#f5a623" stroke-width="1.5" marker-end="url(#arr-a)"/>
+
+        <!-- CHUNKER -->
+        <rect x="170" y="115" width="110" height="70" rx="5" fill="#0f1520" stroke="#f5a623" stroke-width="1.5"/>
+        <text x="225" y="144" text-anchor="middle" font-family="DM Mono" font-size="12" fill="#f5a623">Chunker</text>
+        <text x="225" y="162" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Semantic</text>
+        <text x="225" y="177" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">splitting</text>
+
+        <!-- fork -->
+        <line x1="280" y1="140" x2="318" y2="90" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#arr-t)"/>
+        <line x1="280" y1="162" x2="318" y2="218" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arr-p)"/>
+
+        <!-- VECTOR TRACK label -->
+        <text x="330" y="24" font-family="DM Mono" font-size="10" fill="#2dd4bf" opacity="0.7" letter-spacing="2">VECTOR TRACK</text>
+        <line x1="330" y1="28" x2="920" y2="28" stroke="#2dd4bf" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.3"/>
+
+        <!-- BGE Embedder -->
+        <rect x="320" y="55" width="130" height="70" rx="5" fill="#0f1520" stroke="#2dd4bf" stroke-width="1.5"/>
+        <text x="385" y="80" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#2dd4bf">BGE Embedder</text>
+        <text x="385" y="97" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">bge-large-en</text>
+        <text x="385" y="112" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">1024 dims</text>
+
+        <line x1="450" y1="90" x2="498" y2="90" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#arr-t)"/>
+
+        <!-- Qdrant -->
+        <rect x="500" y="55" width="130" height="70" rx="5" fill="#0f1520" stroke="#2dd4bf" stroke-width="2"/>
+        <text x="565" y="80" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#2dd4bf" font-weight="500">Qdrant</text>
+        <text x="565" y="97" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Vector store</text>
+        <text x="565" y="112" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">cosine · HNSW</text>
+
+        <line x1="630" y1="90" x2="678" y2="90" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#arr-t)"/>
+        <rect x="680" y="68" width="110" height="44" rx="20" fill="#2dd4bf22" stroke="#2dd4bf" stroke-width="1"/>
+        <text x="735" y="86" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#2dd4bf">Chunks +</text>
+        <text x="735" y="101" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#2dd4bf">Vectors stored</text>
+
+        <!-- GRAPH TRACK label -->
+        <text x="330" y="200" font-family="DM Mono" font-size="10" fill="#a78bfa" opacity="0.7" letter-spacing="2">GRAPH TRACK</text>
+        <line x1="330" y1="204" x2="920" y2="204" stroke="#a78bfa" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.3"/>
+
+        <!-- LLM Extractor -->
+        <rect x="320" y="215" width="130" height="70" rx="5" fill="#0f1520" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="385" y="238" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#a78bfa">LLM Extractor</text>
+        <text x="385" y="255" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Entities +</text>
+        <text x="385" y="270" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Relations</text>
+
+        <line x1="450" y1="250" x2="498" y2="250" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arr-p)"/>
+
+        <!-- Rel Inference -->
+        <rect x="500" y="215" width="130" height="70" rx="5" fill="#0f1520" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="565" y="238" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#a78bfa">Rel. Inference</text>
+        <text x="565" y="255" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Triple builder</text>
+        <text x="565" y="270" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">(A)–[R]→(B)</text>
+
+        <line x1="630" y1="250" x2="678" y2="250" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arr-p)"/>
+
+        <!-- Neo4j -->
+        <rect x="680" y="215" width="130" height="70" rx="5" fill="#0f1520" stroke="#4ade80" stroke-width="2"/>
+        <text x="745" y="238" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#4ade80" font-weight="500">Neo4j</text>
+        <text x="745" y="255" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Graph store</text>
+        <text x="745" y="270" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Cypher · ACID</text>
+
+        <line x1="810" y1="250" x2="848" y2="250" stroke="#4ade80" stroke-width="1.5" marker-end="url(#arr-g)"/>
+        <rect x="850" y="228" width="82" height="44" rx="20" fill="#4ade8022" stroke="#4ade80" stroke-width="1"/>
+        <text x="891" y="246" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#4ade80">Nodes +</text>
+        <text x="891" y="261" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#4ade80">Edges stored</text>
+
+        <!-- cross-link -->
+        <path d="M 735 215 Q 735 160 650 140 Q 620 130 630 112" stroke="#f5a623" stroke-width="1" stroke-dasharray="5,3" fill="none" opacity="0.4" marker-end="url(#arr-a)"/>
+        <text x="718" y="173" font-family="DM Mono" font-size="9" fill="#f5a623" opacity="0.6">entity_refs</text>
+        <text x="718" y="185" font-family="DM Mono" font-size="9" fill="#f5a623" opacity="0.6">cross-linked</text>
+      </svg>
+    </div>
+
+    <div style="display:flex;gap:2rem;font-size:0.8125rem;color:var(--text-dim);margin-top:0.7rem;">
+      <span><span style="color:#2dd4bf;">━</span> Vector track → Qdrant</span>
+      <span><span style="color:#a78bfa;">━</span> Graph track → Neo4j</span>
+      <span><span style="color:#f5a623;opacity:0.7;">╌</span> Cross-link: chunks carry entity refs</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: QUERY PIPELINE -->
+  <div class="slide" id="t2">
+    <div class="label">02 — Query Pipeline</div>
+    <h2>One query.<br><em>Two retrievers.</em> One answer.</h2>
+
+    <div style="width:100%;max-width:940px;margin-top:1.4rem;">
+      <svg viewBox="0 0 940 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;overflow:visible;">
+        <defs>
+          <marker id="qa" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#f5a623" opacity="0.8"/></marker>
+          <marker id="qt" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#2dd4bf" opacity="0.8"/></marker>
+          <marker id="qp" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#a78bfa" opacity="0.8"/></marker>
+          <marker id="qg" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#4ade80" opacity="0.8"/></marker>
+          <marker id="qo" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#f87171" opacity="0.8"/></marker>
+        </defs>
+
+        <!-- USER QUERY -->
+        <rect x="8" y="118" width="112" height="70" rx="5" fill="#0f1520" stroke="#f5a623" stroke-width="2"/>
+        <text x="64" y="144" text-anchor="middle" font-family="DM Mono" font-size="11.5" fill="#f5a623" font-weight="500">User Query</text>
+        <text x="64" y="162" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">"What are the</text>
+        <text x="64" y="177" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">retry rules?"</text>
+
+        <line x1="120" y1="153" x2="168" y2="153" stroke="#f5a623" stroke-width="1.5" marker-end="url(#qa)"/>
+
+        <!-- BGE EMBED -->
+        <rect x="170" y="118" width="120" height="70" rx="5" fill="#0f1520" stroke="#f5a623" stroke-width="1.5"/>
+        <text x="230" y="144" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#f5a623">BGE Embed</text>
+        <text x="230" y="162" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Query →</text>
+        <text x="230" y="177" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">1024-dim vec</text>
+
+        <!-- fork -->
+        <line x1="290" y1="138" x2="328" y2="88" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#qt)"/>
+        <line x1="290" y1="170" x2="328" y2="228" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#qp)"/>
+
+        <!-- VECTOR PATH label -->
+        <text x="340" y="22" font-family="DM Mono" font-size="10" fill="#2dd4bf" opacity="0.7" letter-spacing="2">VECTOR PATH — QDRANT</text>
+        <line x1="340" y1="27" x2="700" y2="27" stroke="#2dd4bf" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.3"/>
+
+        <!-- Qdrant ANN -->
+        <rect x="330" y="50" width="135" height="70" rx="5" fill="#0f1520" stroke="#2dd4bf" stroke-width="1.5"/>
+        <text x="397" y="75" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#2dd4bf">Qdrant ANN</text>
+        <text x="397" y="92" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Top-K cosine</text>
+        <text x="397" y="107" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">similar chunks</text>
+
+        <line x1="465" y1="85" x2="503" y2="85" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#qt)"/>
+        <rect x="505" y="62" width="110" height="46" rx="5" fill="#2dd4bf15" stroke="#2dd4bf" stroke-width="1"/>
+        <text x="560" y="82" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#2dd4bf">Semantic</text>
+        <text x="560" y="97" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#2dd4bf">chunk hits</text>
+
+        <!-- GRAPH PATH label -->
+        <text x="340" y="212" font-family="DM Mono" font-size="10" fill="#a78bfa" opacity="0.7" letter-spacing="2">GRAPH PATH — NEO4J</text>
+        <line x1="340" y1="217" x2="700" y2="217" stroke="#a78bfa" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.3"/>
+
+        <!-- Cypher -->
+        <rect x="330" y="228" width="135" height="70" rx="5" fill="#0f1520" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="397" y="251" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#a78bfa">Cypher Query</text>
+        <text x="397" y="268" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">MATCH (n)-</text>
+        <text x="397" y="283" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">[r]→(m)</text>
+
+        <line x1="465" y1="263" x2="503" y2="263" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#qp)"/>
+        <rect x="505" y="240" width="110" height="46" rx="5" fill="#a78bfa15" stroke="#a78bfa" stroke-width="1"/>
+        <text x="560" y="260" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#a78bfa">Graph hops</text>
+        <text x="560" y="275" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#a78bfa">context</text>
+
+        <!-- converge to reranker -->
+        <line x1="615" y1="85" x2="658" y2="148" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#qt)"/>
+        <line x1="615" y1="263" x2="658" y2="180" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#qp)"/>
+
+        <!-- RERANKER -->
+        <rect x="660" y="128" width="120" height="70" rx="5" fill="#0f1520" stroke="#4ade80" stroke-width="2"/>
+        <text x="720" y="153" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#4ade80" font-weight="500">Reranker</text>
+        <text x="720" y="170" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">BGE reranker</text>
+        <text x="720" y="185" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">fused context</text>
+
+        <line x1="780" y1="163" x2="818" y2="163" stroke="#4ade80" stroke-width="1.5" marker-end="url(#qg)"/>
+
+        <!-- LLM -->
+        <rect x="820" y="128" width="110" height="70" rx="5" fill="#0f1520" stroke="#f87171" stroke-width="2"/>
+        <text x="875" y="153" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#f87171" font-weight="500">LLM</text>
+        <text x="875" y="170" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Internal proxy</text>
+        <text x="875" y="185" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">OpenAI-compat</text>
+
+        <line x1="875" y1="198" x2="875" y2="238" stroke="#f87171" stroke-width="1.5" marker-end="url(#qo)"/>
+        <rect x="822" y="240" width="106" height="44" rx="20" fill="#f8717122" stroke="#f87171" stroke-width="1"/>
+        <text x="875" y="259" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#f87171">Answer</text>
+        <text x="875" y="274" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#f87171">grounded</text>
+      </svg>
+    </div>
+
+    <div style="display:flex;gap:2rem;font-size:0.8125rem;color:var(--text-dim);margin-top:0.6rem;">
+      <span><span style="color:#2dd4bf;">━</span> Vector path: semantic similarity</span>
+      <span><span style="color:#a78bfa;">━</span> Graph path: relationship traversal</span>
+      <span><span style="color:#4ade80;">━</span> Reranker fuses both</span>
+      <span><span style="color:#f87171;">━</span> LLM generates grounded answer</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: DATA MODEL -->
+  <div class="slide" id="t3">
+    <div class="label">03 — Data Model</div>
+    <h2>What actually lives in<br><em>Neo4j</em> and <em>Qdrant</em></h2>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;width:100%;max-width:940px;margin-top:1.2rem;">
+
+      <!-- NEO4J -->
+      <div style="background:var(--surface);border:1px solid rgba(74,222,128,0.2);border-top:2px solid #4ade80;border-radius:4px;padding:1.2rem;">
+        <div style="font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#4ade80;margin-bottom:0.9rem;">Neo4j — Graph Store</div>
+
+        <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.4rem;">Node Labels</div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:1rem;">
+          <span style="background:#4ade8018;border:1px solid #4ade8040;color:#4ade80;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">:Document</span>
+          <span style="background:#4ade8018;border:1px solid #4ade8040;color:#4ade80;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">:Entity</span>
+          <span style="background:#4ade8018;border:1px solid #4ade8040;color:#4ade80;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">:Concept</span>
+          <span style="background:#4ade8018;border:1px solid #4ade8040;color:#4ade80;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">:Chunk</span>
+        </div>
+
+        <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.4rem;">Relationship Types</div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:1rem;">
+          <span style="background:#a78bfa18;border:1px solid #a78bfa40;color:#a78bfa;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">MENTIONS</span>
+          <span style="background:#a78bfa18;border:1px solid #a78bfa40;color:#a78bfa;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">RELATED_TO</span>
+          <span style="background:#a78bfa18;border:1px solid #a78bfa40;color:#a78bfa;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">PART_OF</span>
+          <span style="background:#a78bfa18;border:1px solid #a78bfa40;color:#a78bfa;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">DEPENDS_ON</span>
+        </div>
+
+        <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.5rem;">Sample Cypher Query</div>
+        <div style="background:#080b0f;border:1px solid rgba(255,255,255,0.06);border-radius:3px;padding:0.8rem;font-size:0.7rem;line-height:1.9;">
+          <span style="color:#a78bfa;">MATCH</span> <span style="color:#e2e8f0;">(e:Entity)</span><span style="color:#718096;">-</span><span style="color:#f5a623;">[r:RELATED_TO]</span><span style="color:#718096;">-&gt;</span><span style="color:#e2e8f0;">(c:Concept)</span><br>
+          <span style="color:#a78bfa;">WHERE</span> <span style="color:#4ade80;">e.name</span> <span style="color:#f5a623;">=</span> <span style="color:#2dd4bf;">"IMS"</span><br>
+          <span style="color:#a78bfa;">RETURN</span> <span style="color:#4ade80;">e, r, c</span><br>
+          <span style="color:#a78bfa;">LIMIT</span> <span style="color:#f5a623;">10</span>
+        </div>
+      </div>
+
+      <!-- QDRANT -->
+      <div style="background:var(--surface);border:1px solid rgba(45,212,191,0.2);border-top:2px solid #2dd4bf;border-radius:4px;padding:1.2rem;">
+        <div style="font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#2dd4bf;margin-bottom:0.9rem;">Qdrant — Vector Store</div>
+
+        <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.4rem;">Collection Config</div>
+        <div style="background:#080b0f;border:1px solid rgba(255,255,255,0.06);border-radius:3px;padding:0.8rem;font-size:0.7rem;line-height:1.9;margin-bottom:1rem;">
+          <span style="color:#718096;">collection: </span><span style="color:#2dd4bf;">"rag_chunks"</span><br>
+          <span style="color:#718096;">vector_size: </span><span style="color:#f5a623;">1024</span><br>
+          <span style="color:#718096;">distance: </span><span style="color:#4ade80;">Cosine</span><br>
+          <span style="color:#718096;">index: </span><span style="color:#a78bfa;">HNSW</span>  <span style="color:#4a5568;">// fast ANN</span>
+        </div>
+
+        <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.4rem;">Payload (Metadata) Schema</div>
+        <div style="background:#080b0f;border:1px solid rgba(255,255,255,0.06);border-radius:3px;padding:0.8rem;font-size:0.7rem;line-height:1.9;">
+          <span style="color:#718096;">doc_id: </span><span style="color:#2dd4bf;">"ltesms_v25"</span><br>
+          <span style="color:#718096;">chunk_id: </span><span style="color:#f5a623;">"chunk_042"</span><br>
+          <span style="color:#718096;">text: </span><span style="color:#2dd4bf;">"The device shall..."</span><br>
+          <span style="color:#718096;">entity_refs: </span><span style="color:#a78bfa;">["IMS", "DUT", "SIP"]</span><br>
+          <span style="color:#718096;">neo4j_ids: </span><span style="color:#4ade80;">[4821, 4822, 4830]</span>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size:0.8125rem;color:var(--text-dim);text-align:center;margin-top:0.9rem;">
+      The <span style="color:#f5a623;">entity_refs</span> and <span style="color:#f5a623;">neo4j_ids</span> fields are the bridge —
+      vector chunks know which graph nodes they came from, enabling cross-store joins at query time.
+    </p>
+  </div>
+
+  <!-- SLIDE 5: STACK SUMMARY -->
+  <div class="slide" id="t4">
+    <div class="label">04 — The Full Stack</div>
+    <h2>Every layer.<br><em>Every tool.</em></h2>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;width:100%;max-width:940px;margin-top:1.3rem;">
+
+      <div style="background:var(--surface);border:1px solid var(--line);border-top:2px solid var(--amber);border-radius:4px;padding:1.1rem;">
+        <div style="font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--amber);margin-bottom:0.7rem;">Ingestion</div>
+        <div style="font-size:0.8125rem;color:var(--text);font-family:'Fraunces',serif;margin-bottom:0.5rem;">LangChain</div>
+        <div style="font-size:0.75rem;color:var(--text-dim);line-height:1.7;margin-bottom:0.7rem;">Orchestration, document loaders, chunking pipeline</div>
+        <div style="font-size:0.8125rem;color:var(--text);font-family:'Fraunces',serif;margin-bottom:0.5rem;">LLM (via proxy)</div>
+        <div style="font-size:0.75rem;color:var(--text-dim);line-height:1.7;">Entity extraction + relationship inference from chunks</div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--line);border-top:2px solid var(--teal);border-radius:4px;padding:1.1rem;">
+        <div style="font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--teal);margin-bottom:0.7rem;">Vector Store</div>
+        <div style="font-size:0.8125rem;color:var(--text);font-family:'Fraunces',serif;margin-bottom:0.5rem;">Qdrant</div>
+        <div style="font-size:0.75rem;color:var(--text-dim);line-height:1.7;margin-bottom:0.7rem;">Self-hosted. 1024-dim vectors. HNSW index. Cosine distance.</div>
+        <div style="font-size:0.8125rem;color:var(--text);font-family:'Fraunces',serif;margin-bottom:0.5rem;">BGE Embeddings</div>
+        <div style="font-size:0.75rem;color:var(--text-dim);line-height:1.7;">BAAI/bge-large-en-v1.5 — both ingestion and query time</div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--line);border-top:2px solid var(--green);border-radius:4px;padding:1.1rem;">
+        <div style="font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--green);margin-bottom:0.7rem;">Graph Store</div>
+        <div style="font-size:0.8125rem;color:var(--text);font-family:'Fraunces',serif;margin-bottom:0.5rem;">Neo4j Community</div>
+        <div style="font-size:0.75rem;color:var(--text-dim);line-height:1.7;margin-bottom:0.7rem;">Self-hosted. Cypher queries. ACID. langchain-neo4j integration.</div>
+        <div style="font-size:0.8125rem;color:var(--text);font-family:'Fraunces',serif;margin-bottom:0.5rem;">BGE Reranker</div>
+        <div style="font-size:0.75rem;color:var(--text-dim);line-height:1.7;">Fuses vector + graph results. Scores by relevance to query.</div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--line);border-top:2px solid var(--red);border-radius:4px;padding:1.1rem;">
+        <div style="font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--red);margin-bottom:0.7rem;">Generation</div>
+        <div style="font-size:0.8125rem;color:var(--text);font-family:'Fraunces',serif;margin-bottom:0.5rem;">Internal LLM</div>
+        <div style="font-size:0.75rem;color:var(--text-dim);line-height:1.7;margin-bottom:0.7rem;">OpenAI-compatible Python Docker proxy. Self-hosted. No external API calls.</div>
+        <div style="font-size:0.8125rem;color:var(--text);font-family:'Fraunces',serif;margin-bottom:0.5rem;">Cline (Agentic)</div>
+        <div style="font-size:0.75rem;color:var(--text-dim);line-height:1.7;">Orchestrates multi-step RAG skills via SKILL.md definitions.</div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:1rem;font-size:0.8125rem;color:var(--text-dim);text-align:center;">
+      Every component is <span style="color:var(--teal);">self-hosted</span> · <span style="color:var(--teal);">no external APIs</span> · <span style="color:var(--teal);">fully air-gappable</span>
+    </div>
+  </div>
+
+</div>
+
+<div class="nav">
+  <button id="prev" onclick="navigate(-1)">←</button>
+  <div class="nav-dots" id="dots"></div>
+  <span class="slide-counter" id="counter">1 / 5</span>
+  <button id="next" onclick="navigate(1)">→</button>
+</div>
+
+<script>
+  const total = 5;
+  let current = 0;
+  const dotsEl = document.getElementById('dots');
+  const counterEl = document.getElementById('counter');
+  const progressEl = document.getElementById('progress');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotsEl.appendChild(d);
+  }
+
+  function goTo(n) {
+    const slides = document.querySelectorAll('.slide');
+    const old = current; current = n;
+    slides[old].classList.remove('active');
+    slides[old].classList.add('exit');
+    setTimeout(() => slides[old].classList.remove('exit'), 500);
+    slides[current].classList.add('active');
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
+    counterEl.textContent = (current + 1) + ' / ' + total;
+    progressEl.style.width = ((current + 1) / total * 100) + '%';
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === total - 1;
+  }
+
+  function navigate(dir) { const n = current + dir; if (n >= 0 && n < total) goTo(n); }
+  prevBtn.disabled = true;
+  progressEl.style.width = (1 / total * 100) + '%';
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') navigate(1);
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') navigate(-1);
+  });
+</script>
+</body>
+</html>

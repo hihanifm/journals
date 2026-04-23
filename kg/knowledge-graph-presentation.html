@@ -493,6 +493,42 @@
     transition: width 0.4s ease;
     z-index: 200;
   }
+  @keyframes race {
+    0%   { left: -2rem; }
+    100% { left: 102%; }
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(45,212,191,0.5); }
+    50%       { box-shadow: 0 0 20px rgba(45,212,191,0.9); }
+  }
+
+  /* === Borrowed from requirements demo for inserted slides === */
+  .graph-wrap { width: 100%; max-width: 880px; margin-top: 1.2rem; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 0.5rem; position: relative; }
+  .graph-wrap::before { content: 'LTE SMS REQUIREMENTS — KNOWLEDGE GRAPH'; position: absolute; top: -0.6rem; left: 1rem; font-size: 0.6875rem; letter-spacing: 0.12em; color: var(--amber); background: var(--bg); padding: 0 0.4rem; }
+  .query-block { width: 100%; max-width: 820px; margin-top: 1.2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .qp { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 1.2rem; font-size: 0.875rem; }
+  .qp h4 { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.8rem; }
+  .qp.bad h4 { color: var(--red, #f87171); }
+  .qp.good h4 { color: var(--green, #4ade80); }
+  .q-q { font-family: 'Fraunces', serif; font-style: italic; font-size: 1.062rem; color: var(--text); margin-bottom: 0.8rem; line-height: 1.4; }
+  .q-r { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.9; }
+  .q-r .hit { color: var(--green, #4ade80); }
+  .q-r .miss { color: var(--red, #f87171); opacity: 0.7; }
+  .q-r .chain { color: var(--teal); }
+
+  .graph-wrap { width:100%;max-width:880px;margin-top:1.2rem;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:0.5rem;position:relative; }
+  .graph-wrap::before { content:'LTE SMS REQUIREMENTS — KNOWLEDGE GRAPH';position:absolute;top:-0.6rem;left:1rem;font-size:0.6875rem;letter-spacing:0.12em;color:var(--amber);background:var(--bg);padding:0 0.4rem; }
+  .query-block { width:100%;max-width:820px;margin-top:1.2rem;display:grid;grid-template-columns:1fr 1fr;gap:1rem; }
+  .qp { background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1.2rem;font-size:0.875rem; }
+  .qp h4 { font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.8rem; }
+  .qp.bad h4 { color:#f87171; }
+  .qp.good h4 { color:#4ade80; }
+  .q-q { font-family:'Fraunces',serif;font-style:italic;font-size:1.062rem;color:var(--text);margin-bottom:0.8rem;line-height:1.4; }
+  .q-r { font-size:0.8125rem;color:var(--text-dim);line-height:1.9; }
+  .miss { color:#f87171;opacity:0.8; }
+  .hit { color:#4ade80; }
+  .chain { color:var(--teal); }
+
 </style>
 </head>
 <body>
@@ -510,6 +546,131 @@
     <h1>The <em>Evolution</em> of<br>Knowledge Retrieval</h1>
     <div class="amber-line"></div>
     <p class="subtitle">From linear search to knowledge graphs — why humans obsess over finding things faster, and how graph databases changed everything.</p>
+  </div>
+
+  <!-- SLIDE 1b: FAST & FURIOUS FUN SLIDE -->
+  <div class="slide" id="s0b">
+    <div class="label">The Quest Never Stops</div>
+    <h2>Humans have <em>always</em> been<br>obsessed with going faster</h2>
+
+    <!-- Road strip -->
+    <div style="width:100%;max-width:980px;margin-top:1.2rem;position:relative;">
+
+      <!-- Road -->
+      <div style="position:relative;height:54px;background:linear-gradient(180deg,#1a1a2e,#16213e);border-radius:6px;overflow:hidden;border:1px solid rgba(245,166,35,0.15);">
+        <!-- dashed centre line -->
+        <div style="position:absolute;top:50%;left:0;right:0;height:2px;transform:translateY(-50%);background:repeating-linear-gradient(90deg,#f5a62340 0px,#f5a62340 30px,transparent 30px,transparent 60px);"></div>
+        <!-- speed lines -->
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0px,transparent 80px,rgba(255,255,255,0.015) 80px,rgba(255,255,255,0.015) 81px);"></div>
+        <!-- car emoji racing across -->
+        <div style="position:absolute;top:50%;transform:translateY(-50%);font-size:1.6rem;animation:race 4s linear infinite;">🏎️</div>
+      </div>
+
+      <!-- Timeline dots row -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-top:0.7rem;position:relative;">
+        <!-- spine line -->
+        <div style="position:absolute;top:8px;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--amber-dim),var(--amber),#2dd4bf);opacity:0.25;"></div>
+
+        <!-- each film -->
+        <!-- 2001 -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
+          <div style="width:14px;height:14px;border-radius:50%;background:var(--amber);box-shadow:0 0 6px rgba(245,166,35,0.6);flex-shrink:0;z-index:1;margin-bottom:0.4rem;"></div>
+          <div style="font-size:0.625rem;color:var(--amber);margin-bottom:0.2rem;font-weight:600;">2001</div>
+          <div style="font-size:0.6rem;color:var(--text);text-align:center;line-height:1.4;padding:0 2px;">The Fast &<br>the Furious</div>
+          <div style="font-size:0.55rem;color:var(--text-dim);text-align:center;margin-top:0.2rem;font-style:italic;">The origin</div>
+        </div>
+
+        <!-- 2003 -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
+          <div style="width:12px;height:12px;border-radius:50%;background:var(--surface);border:1.5px solid var(--amber-dim);flex-shrink:0;z-index:1;margin-bottom:0.4rem;"></div>
+          <div style="font-size:0.625rem;color:var(--amber-dim);margin-bottom:0.2rem;font-weight:600;">2003</div>
+          <div style="font-size:0.6rem;color:var(--text);text-align:center;line-height:1.4;padding:0 2px;">2 Fast<br>2 Furious</div>
+          <div style="font-size:0.55rem;color:var(--text-dim);text-align:center;margin-top:0.2rem;font-style:italic;">Double down</div>
+        </div>
+
+        <!-- 2006 -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
+          <div style="width:12px;height:12px;border-radius:50%;background:var(--surface);border:1.5px solid var(--amber-dim);flex-shrink:0;z-index:1;margin-bottom:0.4rem;"></div>
+          <div style="font-size:0.625rem;color:var(--amber-dim);margin-bottom:0.2rem;font-weight:600;">2006</div>
+          <div style="font-size:0.6rem;color:var(--text);text-align:center;line-height:1.4;padding:0 2px;">Tokyo<br>Drift</div>
+          <div style="font-size:0.55rem;color:var(--text-dim);text-align:center;margin-top:0.2rem;font-style:italic;">New terrain</div>
+        </div>
+
+        <!-- 2009 -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
+          <div style="width:12px;height:12px;border-radius:50%;background:var(--surface);border:1.5px solid var(--amber-dim);flex-shrink:0;z-index:1;margin-bottom:0.4rem;"></div>
+          <div style="font-size:0.625rem;color:var(--amber-dim);margin-bottom:0.2rem;font-weight:600;">2009</div>
+          <div style="font-size:0.6rem;color:var(--text);text-align:center;line-height:1.4;padding:0 2px;">Fast &<br>Furious</div>
+          <div style="font-size:0.55rem;color:var(--text-dim);text-align:center;margin-top:0.2rem;font-style:italic;">Back to roots</div>
+        </div>
+
+        <!-- 2011 -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
+          <div style="width:14px;height:14px;border-radius:50%;background:var(--amber);box-shadow:0 0 6px rgba(245,166,35,0.5);flex-shrink:0;z-index:1;margin-bottom:0.4rem;"></div>
+          <div style="font-size:0.625rem;color:var(--amber);margin-bottom:0.2rem;font-weight:600;">2011</div>
+          <div style="font-size:0.6rem;color:var(--text);text-align:center;line-height:1.4;padding:0 2px;">Fast<br>Five</div>
+          <div style="font-size:0.55rem;color:var(--text-dim);text-align:center;margin-top:0.2rem;font-style:italic;">Peak form</div>
+        </div>
+
+        <!-- 2013 -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
+          <div style="width:12px;height:12px;border-radius:50%;background:var(--surface);border:1.5px solid var(--amber-dim);flex-shrink:0;z-index:1;margin-bottom:0.4rem;"></div>
+          <div style="font-size:0.625rem;color:var(--amber-dim);margin-bottom:0.2rem;font-weight:600;">2013</div>
+          <div style="font-size:0.6rem;color:var(--text);text-align:center;line-height:1.4;padding:0 2px;">Fast &<br>Furious 6</div>
+          <div style="font-size:0.55rem;color:var(--text-dim);text-align:center;margin-top:0.2rem;font-style:italic;">Bigger stakes</div>
+        </div>
+
+        <!-- 2015 -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
+          <div style="width:14px;height:14px;border-radius:50%;background:var(--teal);box-shadow:0 0 6px rgba(45,212,191,0.5);flex-shrink:0;z-index:1;margin-bottom:0.4rem;"></div>
+          <div style="font-size:0.625rem;color:var(--teal);margin-bottom:0.2rem;font-weight:600;">2015</div>
+          <div style="font-size:0.6rem;color:var(--text);text-align:center;line-height:1.4;padding:0 2px;">Furious<br>7</div>
+          <div style="font-size:0.55rem;color:var(--text-dim);text-align:center;margin-top:0.2rem;font-style:italic;">For Paul 🕊</div>
+        </div>
+
+        <!-- 2017 -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
+          <div style="width:12px;height:12px;border-radius:50%;background:var(--surface);border:1.5px solid var(--amber-dim);flex-shrink:0;z-index:1;margin-bottom:0.4rem;"></div>
+          <div style="font-size:0.625rem;color:var(--amber-dim);margin-bottom:0.2rem;font-weight:600;">2017</div>
+          <div style="font-size:0.6rem;color:var(--text);text-align:center;line-height:1.4;padding:0 2px;">Fate of<br>the Furious</div>
+          <div style="font-size:0.55rem;color:var(--text-dim);text-align:center;margin-top:0.2rem;font-style:italic;">No slowing down</div>
+        </div>
+
+        <!-- 2019 -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
+          <div style="width:12px;height:12px;border-radius:50%;background:var(--surface);border:1.5px solid var(--amber-dim);flex-shrink:0;z-index:1;margin-bottom:0.4rem;"></div>
+          <div style="font-size:0.625rem;color:var(--amber-dim);margin-bottom:0.2rem;font-weight:600;">2019</div>
+          <div style="font-size:0.6rem;color:var(--text);text-align:center;line-height:1.4;padding:0 2px;">Hobbs &<br>Shaw</div>
+          <div style="font-size:0.55rem;color:var(--text-dim);text-align:center;margin-top:0.2rem;font-style:italic;">Spin-off speed</div>
+        </div>
+
+        <!-- 2021 -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
+          <div style="width:12px;height:12px;border-radius:50%;background:var(--surface);border:1.5px solid var(--amber-dim);flex-shrink:0;z-index:1;margin-bottom:0.4rem;"></div>
+          <div style="font-size:0.625rem;color:var(--amber-dim);margin-bottom:0.2rem;font-weight:600;">2021</div>
+          <div style="font-size:0.6rem;color:var(--text);text-align:center;line-height:1.4;padding:0 2px;">F9</div>
+          <div style="font-size:0.55rem;color:var(--text-dim);text-align:center;margin-top:0.2rem;font-style:italic;">Into orbit 🚀</div>
+        </div>
+
+        <!-- 2023 -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
+          <div style="width:14px;height:14px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px rgba(45,212,191,0.7);flex-shrink:0;z-index:1;margin-bottom:0.4rem;"></div>
+          <div style="font-size:0.625rem;color:var(--teal);margin-bottom:0.2rem;font-weight:600;">2023</div>
+          <div style="font-size:0.6rem;color:var(--text);text-align:center;line-height:1.4;padding:0 2px;">Fast X</div>
+          <div style="font-size:0.55rem;color:var(--text-dim);text-align:center;margin-top:0.2rem;font-style:italic;">Still going</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Punchline -->
+    <div style="max-width:820px;margin-top:1.3rem;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:3px;padding:1rem 1.4rem;font-family:'Fraunces',serif;font-style:italic;font-size:clamp(0.9rem,1.6vw,1.15rem);color:var(--text);line-height:1.6;">
+      "22 years. 11 films. The obsession with speed never stopped —<br>and neither did ours. <span style="color:var(--amber);">It's not about the data. It's about how fast you can get to it.</span>"
+    </div>
+
+    <!-- Bridge line -->
+    <div style="margin-top:1rem;font-size:0.8125rem;color:var(--text-dim);text-align:center;letter-spacing:0.05em;">
+      Same energy, different domain &nbsp;→&nbsp; <span style="color:var(--amber);">retrieval speed has been the obsession driving computer science for 50 years</span>
+    </div>
   </div>
 
   <!-- SLIDE 2: THE PRIMAL NEED -->
@@ -665,7 +826,109 @@
     <p class="subtitle" style="margin-top:0.8rem;">Every relationship is explicit and traversable. Ask: <em>"Who are Layla's paternal grandparents?"</em> — the graph answers in one hop.</p>
   </div>
 
-  <!-- SLIDE 7: KG EVOLUTION TIMELINE -->
+  <!-- INSERTED A: Requirements KG graph -->
+  <div class="slide" id="s5c">
+    <div class="label">05 — Our Documents as a Graph</div>
+    <h2>LTE SMS Requirements as a <em>navigable network</em></h2>
+    <div class="graph-wrap">
+      <svg viewBox="0 0 840 350" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+        <defs>
+          <marker id="rc1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#f5a62370"/></marker>
+          <marker id="rc2" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#2dd4bf70"/></marker>
+          <marker id="rc3" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#a78bfa70"/></marker>
+          <marker id="rc4" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#4ade8070"/></marker>
+          <marker id="rc5" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5 z" fill="#60a5fa70"/></marker>
+        </defs>
+        <line x1="160" y1="130" x2="310" y2="90" stroke="#2dd4bf50" stroke-width="1.5" marker-end="url(#rc2)"/>
+        <text x="195" y="100" font-family="DM Mono" font-size="9.375" fill="#2dd4bf" opacity="0.85">SHALL_SUPPORT</text>
+        <line x1="155" y1="155" x2="290" y2="245" stroke="#4ade8050" stroke-width="1.5" marker-end="url(#rc4)"/>
+        <text x="155" y="215" font-family="DM Mono" font-size="9.375" fill="#4ade80" opacity="0.85">SHALL_SUPPORT</text>
+        <line x1="145" y1="165" x2="95" y2="255" stroke="#60a5fa50" stroke-width="1.5" marker-end="url(#rc5)"/>
+        <text x="60" y="217" font-family="DM Mono" font-size="9.375" fill="#60a5fa" opacity="0.85">SHALL_SUPPORT</text>
+        <line x1="415" y1="88" x2="530" y2="90" stroke="#2dd4bf50" stroke-width="1.5" marker-end="url(#rc2)"/>
+        <text x="425" y="79" font-family="DM Mono" font-size="9.375" fill="#2dd4bf" opacity="0.85">REQUIRES</text>
+        <line x1="380" y1="110" x2="380" y2="165" stroke="#f5a62350" stroke-width="1.5" marker-end="url(#rc1)"/>
+        <text x="387" y="145" font-family="DM Mono" font-size="9.375" fill="#f5a623" opacity="0.85">INCLUDES</text>
+        <line x1="400" y1="110" x2="545" y2="165" stroke="#f5a62350" stroke-width="1.5" marker-end="url(#rc1)"/>
+        <text x="455" y="140" font-family="DM Mono" font-size="9.375" fill="#f5a623" opacity="0.85">INCLUDES</text>
+        <line x1="365" y1="210" x2="280" y2="275" stroke="#a78bfa50" stroke-width="1.5" marker-end="url(#rc3)"/>
+        <text x="285" y="250" font-family="DM Mono" font-size="9.375" fill="#a78bfa" opacity="0.85">HAS_RULE</text>
+        <line x1="595" y1="210" x2="670" y2="265" stroke="#a78bfa50" stroke-width="1.5" marker-end="url(#rc3)"/>
+        <text x="645" y="247" font-family="DM Mono" font-size="9.375" fill="#a78bfa" opacity="0.85">REQUIRES</text>
+        <line x1="390" y1="255" x2="490" y2="300" stroke="#4ade8050" stroke-width="1.5" marker-end="url(#rc4)"/>
+        <text x="408" y="295" font-family="DM Mono" font-size="9.375" fill="#4ade80" opacity="0.85">MANDATED_BY</text>
+        <line x1="680" y1="120" x2="430" y2="188" stroke="#f5a62350" stroke-width="1.5" marker-end="url(#rc1)"/>
+        <text x="580" y="148" font-family="DM Mono" font-size="9.375" fill="#f5a623" opacity="0.8">CONTROLS</text>
+        <rect x="60" y="118" width="110" height="50" rx="3" fill="#111520" stroke="#2dd4bf" stroke-width="2"/>
+        <text x="115" y="139" text-anchor="middle" font-family="DM Mono" font-size="12.5" fill="#2dd4bf" font-weight="500">LTE Device</text>
+        <text x="115" y="155" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">Subject of all reqs</text>
+        <rect x="315" y="68" width="110" height="50" rx="3" fill="#111520" stroke="#f5a623" stroke-width="2"/>
+        <text x="370" y="87" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#f5a623" font-weight="500">SMS over IMS</text>
+        <text x="370" y="103" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">Core service</text>
+        <rect x="532" y="68" width="130" height="50" rx="3" fill="#111520" stroke="#2dd4bf" stroke-width="1.5"/>
+        <text x="597" y="87" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#2dd4bf">IMS Registration</text>
+        <text x="597" y="103" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">Prerequisite</text>
+        <rect x="333" y="170" width="90" height="48" rx="3" fill="#111520" stroke="#f5a623" stroke-width="1.5"/>
+        <text x="378" y="191" text-anchor="middle" font-family="DM Mono" font-size="11.88" fill="#f5a623">MO SMS</text>
+        <text x="378" y="207" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">Outbound</text>
+        <rect x="545" y="170" width="90" height="48" rx="3" fill="#111520" stroke="#f5a623" stroke-width="1.5"/>
+        <text x="590" y="191" text-anchor="middle" font-family="DM Mono" font-size="11.88" fill="#f5a623">MT SMS</text>
+        <text x="590" y="207" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">Inbound</text>
+        <rect x="218" y="268" width="120" height="48" rx="3" fill="#111520" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="278" y="288" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#a78bfa">Retry (30s)</text>
+        <text x="278" y="304" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">REQ-29550</text>
+        <rect x="645" y="258" width="110" height="48" rx="3" fill="#111520" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="700" y="278" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#a78bfa">SIP 200 OK</text>
+        <text x="700" y="294" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">REQ-29557</text>
+        <rect x="300" y="230" width="110" height="48" rx="3" fill="#111520" stroke="#4ade80" stroke-width="1.5"/>
+        <text x="355" y="249" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#4ade80">Text-to-988</text>
+        <text x="355" y="265" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">FCC mandate</text>
+        <rect x="490" y="290" width="110" height="48" rx="3" fill="#111520" stroke="#4ade80" stroke-width="1"/>
+        <text x="545" y="310" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#4ade80">FCC-21-119</text>
+        <text x="545" y="326" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">Regulatory body</text>
+        <rect x="660" y="98" width="110" height="48" rx="3" fill="#111520" stroke="#f5a623" stroke-width="1"/>
+        <text x="715" y="118" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#f5a623">smsformat</text>
+        <text x="715" y="134" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">3gpp / 3gpp2</text>
+        <rect x="38" y="248" width="110" height="48" rx="3" fill="#111520" stroke="#60a5fa" stroke-width="1"/>
+        <text x="93" y="268" text-anchor="middle" font-family="DM Mono" font-size="11.25" fill="#60a5fa">SMS over NAS</text>
+        <text x="93" y="284" text-anchor="middle" font-family="DM Mono" font-size="9.375" fill="#718096">Non-IMS path</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- INSERTED B: Querying the Combined Graph -->
+  <div class="slide" id="s5d">
+    <div class="label">05 — Graph Query in Action</div>
+    <h2>Questions that <em>only a graph</em> can answer fast</h2>
+    <div class="query-block">
+      <div class="qp bad">
+        <h4>&#10060; Without Graph</h4>
+        <div class="q-q">"Is the FCC Text-to-988 mandate covered by our test plan?"</div>
+        <div class="q-r">
+          <span class="miss">Search "FCC" across both documents...</span><br><br>
+          &bull; Found in requirements on page 17<br>
+          &bull; Found as TC 2.25 in test plan p.10<br>
+          &bull; Are they linked? Unknown &mdash; must manually verify<br>
+          &bull; Is TC 2.25 still active? Must check revision history<br>
+          &bull; Time to answer: 20&ndash;30 minutes
+        </div>
+      </div>
+      <div class="qp good">
+        <h4>&#10003; With Graph</h4>
+        <div class="q-q">"Is the FCC Text-to-988 mandate covered by our test plan?"</div>
+        <div class="q-r">
+          <span class="hit">Traverses: FCC-21-119 &rarr; REQ-4105999311951475 &rarr; TC-7349</span><br><br>
+          <span class="chain">&rarr; REQ mandates Text-to-988 over IMS</span><br>
+          <span class="chain">&rarr; TC-7349 verifies this requirement</span><br>
+          <span class="chain">&rarr; TC added in version 20.0 (June 2022)</span><br>
+          <span class="chain">&rarr; TC is ACTIVE in v25 &mdash; coverage confirmed &#10003;</span><br>
+          <span class="hit">Time to answer: &lt;1 second</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- SLIDE 7: KG EVOLUTION TIMELINE -->
   <div class="slide" id="s6">
     <div class="label">06 — Two Decades of Evolution</div>
     <h2>Knowledge Graphs didn't appear overnight —<br>they <em>evolved</em> over 20+ years</h2>
@@ -851,9 +1114,174 @@
     <p class="subtitle" style="margin-top:1rem;">The same document. Infinitely richer access.</p>
   </div>
 
-  <!-- SLIDE 12: RAG + KG -->
+  <!-- TRANSITION SLIDE A: THE WORLD CHANGED -->
+  <div class="slide" id="stA">
+    <div class="label">11 — The Inflection Point</div>
+    <h2>Then something<br><em>changed everything</em></h2>
+
+    <div style="width:100%;max-width:900px;margin-top:1.6rem;position:relative;">
+      <!-- spine -->
+      <div style="position:absolute;top:22px;left:0;right:0;height:2px;background:linear-gradient(90deg,#a78bfa,#f5a623,#2dd4bf);opacity:0.35;border-radius:2px;"></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;">
+
+        <!-- 2017 Transformers -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+          <div style="width:20px;height:20px;border-radius:50%;background:#a78bfa;box-shadow:0 0 10px rgba(167,139,250,0.5);z-index:1;margin-bottom:0.7rem;"></div>
+          <div style="font-size:0.9375rem;color:#a78bfa;font-weight:600;margin-bottom:0.35rem;">2017</div>
+          <div style="font-family:'Fraunces',serif;font-size:1rem;color:var(--text);margin-bottom:0.3rem;text-align:center;">Attention<br>Is All You Need</div>
+          <div style="font-size:0.8125rem;color:var(--text-dim);text-align:center;line-height:1.6;padding:0 0.5rem;">The Transformer<br>architecture arrives.<br>Language understanding<br>changes forever.</div>
+        </div>
+
+        <!-- 2018 BERT -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+          <div style="width:16px;height:16px;border-radius:50%;background:var(--surface);border:2px solid #a78bfa;z-index:1;margin-bottom:0.7rem;"></div>
+          <div style="font-size:0.9375rem;color:#a78bfa;font-weight:600;margin-bottom:0.35rem;">2018</div>
+          <div style="font-family:'Fraunces',serif;font-size:1rem;color:var(--text);margin-bottom:0.3rem;text-align:center;">BERT &amp;<br>Embeddings</div>
+          <div style="font-size:0.8125rem;color:var(--text-dim);text-align:center;line-height:1.6;padding:0 0.5rem;">Words get meaning.<br>Semantic search<br>becomes possible<br>at scale.</div>
+        </div>
+
+        <!-- 2020 GPT-3 -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+          <div style="width:20px;height:20px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px rgba(245,166,35,0.5);z-index:1;margin-bottom:0.7rem;"></div>
+          <div style="font-size:0.9375rem;color:var(--amber);font-weight:600;margin-bottom:0.35rem;">2020</div>
+          <div style="font-family:'Fraunces',serif;font-size:1rem;color:var(--text);margin-bottom:0.3rem;text-align:center;">GPT-3</div>
+          <div style="font-size:0.8125rem;color:var(--text-dim);text-align:center;line-height:1.6;padding:0 0.5rem;">175B parameters.<br>LLMs can read,<br>reason, and write<br>like humans.</div>
+        </div>
+
+        <!-- 2022 ChatGPT -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--amber);box-shadow:0 0 16px rgba(245,166,35,0.7);z-index:1;margin-bottom:0.7rem;"></div>
+          <div style="font-size:0.9375rem;color:var(--amber);font-weight:600;margin-bottom:0.35rem;">2022 ★</div>
+          <div style="font-family:'Fraunces',serif;font-size:1.05rem;color:var(--amber);margin-bottom:0.3rem;text-align:center;">ChatGPT</div>
+          <div style="font-size:0.8125rem;color:var(--text-dim);text-align:center;line-height:1.6;padding:0 0.5rem;">100M users in<br>60 days. The world<br>got a brain. AI<br>goes mainstream.</div>
+        </div>
+
+        <!-- 2023 RAG -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+          <div style="width:20px;height:20px;border-radius:50%;background:var(--teal);box-shadow:0 0 10px rgba(45,212,191,0.5);z-index:1;margin-bottom:0.7rem;"></div>
+          <div style="font-size:0.9375rem;color:var(--teal);font-weight:600;margin-bottom:0.35rem;">2023</div>
+          <div style="font-family:'Fraunces',serif;font-size:1rem;color:var(--text);margin-bottom:0.3rem;text-align:center;">RAG &amp;<br>Graph RAG</div>
+          <div style="font-size:0.8125rem;color:var(--text-dim);text-align:center;line-height:1.6;padding:0 0.5rem;">LLMs get memory.<br>Knowledge Graphs<br>become the backbone<br>of AI answers.</div>
+        </div>
+
+        <!-- Now -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+          <div style="width:20px;height:20px;border-radius:50%;background:var(--teal);box-shadow:0 0 14px rgba(45,212,191,0.8);z-index:1;margin-bottom:0.7rem;animation:pulse 2s ease-in-out infinite;"></div>
+          <div style="font-size:0.9375rem;color:var(--teal);font-weight:600;margin-bottom:0.35rem;">Now</div>
+          <div style="font-family:'Fraunces',serif;font-size:1rem;color:var(--teal);margin-bottom:0.3rem;text-align:center;">You are here</div>
+          <div style="font-size:0.8125rem;color:var(--text-dim);text-align:center;line-height:1.6;padding:0 0.5rem;">KG + RAG is the<br>architecture every<br>serious AI system<br>is moving toward.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="max-width:760px;margin-top:1.4rem;font-size:0.875rem;color:var(--text-dim);text-align:center;line-height:1.7;">
+      The manual bottleneck that kept Knowledge Graphs niche for 20 years?
+      <span style="color:var(--amber);">AI dissolved it — and suddenly KGs are the most valuable structure in the AI stack.</span>
+    </div>
+  </div>
+
+  <!-- TRANSITION SLIDE B: WHAT IS RAG -->
+  <div class="slide" id="stB">
+    <div class="label">12 — The New Toolkit</div>
+    <h2>What is <em>RAG</em>?</h2>
+    <div class="amber-line"></div>
+
+    <!-- RAG acronym breakdown -->
+    <div style="display:flex;gap:0;width:100%;max-width:860px;margin-top:1.2rem;align-items:stretch;">
+
+      <!-- R -->
+      <div style="flex:1;background:var(--surface);border:1px solid var(--line);border-right:none;border-radius:4px 0 0 4px;padding:1.4rem 1.2rem;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;width:100%;height:3px;background:var(--amber);"></div>
+        <div style="font-family:'Fraunces',serif;font-size:3.5rem;font-weight:900;color:var(--amber);line-height:1;margin-bottom:0.5rem;">R</div>
+        <div style="font-size:0.9375rem;color:var(--amber);letter-spacing:0.05em;margin-bottom:0.7rem;font-weight:500;">Retrieval</div>
+        <div style="font-size:0.8125rem;color:var(--text-dim);line-height:1.7;">Before answering, go find the relevant knowledge. Search your documents, your graph, your data.</div>
+        <div style="margin-top:0.8rem;font-size:0.75rem;color:var(--text-dim);background:#0a0c10;border:1px solid rgba(255,255,255,0.06);border-radius:3px;padding:0.5rem 0.7rem;font-style:italic;">"Who are our top delayed suppliers?"<br><span style="color:var(--amber);">→ fetch relevant chunks + graph paths</span></div>
+      </div>
+
+      <!-- A -->
+      <div style="flex:1;background:var(--surface);border:1px solid var(--line);border-right:none;padding:1.4rem 1.2rem;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;width:100%;height:3px;background:#a78bfa;"></div>
+        <div style="font-family:'Fraunces',serif;font-size:3.5rem;font-weight:900;color:#a78bfa;line-height:1;margin-bottom:0.5rem;">A</div>
+        <div style="font-size:0.9375rem;color:#a78bfa;letter-spacing:0.05em;margin-bottom:0.7rem;font-weight:500;">Augmented</div>
+        <div style="font-size:0.8125rem;color:var(--text-dim);line-height:1.7;">Enrich the prompt with that retrieved context before sending to the LLM. Give it the facts.</div>
+        <div style="margin-top:0.8rem;font-size:0.75rem;color:var(--text-dim);background:#0a0c10;border:1px solid rgba(255,255,255,0.06);border-radius:3px;padding:0.5rem 0.7rem;font-style:italic;">"Here are 5 relevant docs + graph context…<br><span style="color:#a78bfa;">now answer the question"</span></div>
+      </div>
+
+      <!-- G -->
+      <div style="flex:1;background:var(--surface);border:1px solid var(--line);border-radius:0 4px 4px 0;padding:1.4rem 1.2rem;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;width:100%;height:3px;background:var(--teal);"></div>
+        <div style="font-family:'Fraunces',serif;font-size:3.5rem;font-weight:900;color:var(--teal);line-height:1;margin-bottom:0.5rem;">G</div>
+        <div style="font-size:0.9375rem;color:var(--teal);letter-spacing:0.05em;margin-bottom:0.7rem;font-weight:500;">Generation</div>
+        <div style="font-size:0.8125rem;color:var(--text-dim);line-height:1.7;">Now let the LLM answer — grounded in real facts, not hallucination. Accurate, traceable, trusted.</div>
+        <div style="margin-top:0.8rem;font-size:0.75rem;color:var(--text-dim);background:#0a0c10;border:1px solid rgba(255,255,255,0.06);border-radius:3px;padding:0.5rem 0.7rem;font-style:italic;">"Supplier X has 3 delayed orders linked<br><span style="color:var(--teal);">to port congestion in Q3."</span></div>
+      </div>
+    </div>
+
+    <!-- Open book analogy -->
+    <div style="max-width:860px;margin-top:1.1rem;display:flex;gap:1.2rem;align-items:center;">
+      <div style="flex:1;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:4px;padding:0.9rem 1.1rem;font-size:0.8125rem;color:var(--text-dim);line-height:1.6;">
+        <span style="color:#f87171;font-weight:600;">❌ LLM alone</span> — closed book exam. Answers from memory only. Confidently wrong. Hallucinations. No traceability.
+      </div>
+      <div style="font-size:1.5rem;color:var(--amber);flex-shrink:0;">→</div>
+      <div style="flex:1;background:rgba(45,212,191,0.08);border:1px solid rgba(45,212,191,0.2);border-radius:4px;padding:0.9rem 1.1rem;font-size:0.8125rem;color:var(--text-dim);line-height:1.6;">
+        <span style="color:var(--teal);font-weight:600;">✓ RAG</span> — open book exam. Retrieves facts first, then answers. Grounded. Accurate. Every answer traceable to a source.
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSITION SLIDE C: WHY KG MAKES RAG BETTER -->
+  <div class="slide" id="stC">
+    <div class="label">13 — The Power Combination</div>
+    <h2>Why <em>Knowledge Graph</em><br>makes RAG dramatically better</h2>
+    <div class="amber-line"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;width:100%;max-width:920px;margin-top:1rem;">
+
+      <!-- Plain RAG -->
+      <div style="background:var(--surface);border:1px solid rgba(248,113,113,0.25);border-top:2px solid #f87171;border-radius:4px;padding:1.2rem;">
+        <div style="font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#f87171;margin-bottom:0.8rem;">&#10060; Without Graph</div>
+        <div style="font-size:0.8125rem;color:var(--text-dim);line-height:1.8;margin-bottom:0.9rem;">User asks: <span style="color:var(--text);font-style:italic;">"Is the FCC Text-to-988 mandate covered by our test plan?"</span></div>
+        <div style="font-size:0.8125rem;color:var(--text-dim);line-height:1.9;">
+          <div style="margin-bottom:0.4rem;color:#f87171;opacity:0.8;">Search "FCC" across both documents...</div>
+          <div style="margin-bottom:0.4rem;">&bull; Found in requirements on page 17</div>
+          <div style="margin-bottom:0.4rem;">&bull; Found as TC 2.25 in test plan p.10</div>
+          <div style="margin-bottom:0.4rem;color:#f87171;">✗ Are they linked? Unknown — must manually verify</div>
+          <div style="color:#f87171;">✗ Is TC 2.25 still active? Must check revision history</div>
+        </div>
+        <div style="margin-top:0.9rem;background:#0a0c10;border:1px solid rgba(255,255,255,0.05);border-radius:3px;padding:0.7rem;font-size:0.75rem;color:var(--text-dim);font-style:italic;">
+          Time to answer: 20–30 minutes<br>
+          <span style="color:#f87171;">No certainty. No traceability.</span>
+        </div>
+      </div>
+
+      <!-- KG + RAG -->
+      <div style="background:var(--surface);border:1px solid rgba(45,212,191,0.25);border-top:2px solid var(--teal);border-radius:4px;padding:1.2rem;">
+        <div style="font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--teal);margin-bottom:0.8rem;">&#10003; With Graph</div>
+        <div style="font-size:0.8125rem;color:var(--text-dim);line-height:1.8;margin-bottom:0.9rem;">User asks: <span style="color:var(--text);font-style:italic;">"Is the FCC Text-to-988 mandate covered by our test plan?"</span></div>
+        <div style="font-size:0.8125rem;color:var(--text-dim);line-height:1.9;">
+          <div style="margin-bottom:0.4rem;color:var(--teal);">Traverses: FCC-21-119 → REQ-4105999311951475 → TC-7349</div>
+          <div style="margin-bottom:0.4rem;color:var(--teal);">→ REQ mandates Text-to-988 over IMS</div>
+          <div style="margin-bottom:0.4rem;color:var(--teal);">→ TC-7349 verifies this requirement</div>
+          <div style="margin-bottom:0.4rem;color:var(--teal);">→ TC added in version 20.0 (June 2022)</div>
+          <div style="color:var(--teal);">→ TC is ACTIVE in v25 — coverage confirmed ✓</div>
+        </div>
+        <div style="margin-top:0.9rem;background:#0a0c10;border:1px solid rgba(255,255,255,0.05);border-radius:3px;padding:0.7rem;font-size:0.75rem;color:var(--text-dim);font-style:italic;">
+          Time to answer: &lt;1 second<br>
+          <span style="color:var(--teal);">Specific. Traced. Confirmed.</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="max-width:920px;margin-top:0.9rem;font-size:0.8125rem;color:var(--text-dim);text-align:center;line-height:1.7;">
+      The graph doesn't just find documents that <em>mention</em> the FCC mandate —<br>it follows the <span style="color:var(--amber);">full chain</span>: regulation → requirement → test case → version status.
+    </div>
+  </div>
+
+  <!-- SLIDE 14: RAG + KG (original) -->
   <div class="slide" id="s10">
-    <div class="label">11 — Modern Application</div>
+    <div class="label">14 — Modern Application</div>
     <h2>Knowledge Graphs<br>+ <em>RAG</em></h2>
     <div class="amber-line"></div>
     <div class="cards">
@@ -875,280 +1303,7 @@
     </div>
   </div>
 
-  <!-- SLIDE 13: INGESTION PIPELINE -->
-  <div class="slide" id="s12">
-    <div class="label">12 — Tech Internals · Ingestion Pipeline</div>
-    <h2>One document.<br><em>Two stores.</em> Built in parallel.</h2>
-
-    <div style="width:100%;max-width:940px;margin-top:1.4rem;">
-      <svg viewBox="0 0 940 310" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;overflow:visible;">
-        <defs>
-          <marker id="arr-a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#f5a623" opacity="0.8"/></marker>
-          <marker id="arr-t" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#2dd4bf" opacity="0.8"/></marker>
-          <marker id="arr-p" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#a78bfa" opacity="0.8"/></marker>
-          <marker id="arr-g" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#4ade80" opacity="0.8"/></marker>
-        </defs>
-
-        <!-- ── DOCUMENT ── -->
-        <rect x="10" y="115" width="110" height="70" rx="5" fill="#111520" stroke="#f5a623" stroke-width="2"/>
-        <text x="65" y="144" text-anchor="middle" font-family="DM Mono" font-size="12" fill="#f5a623" font-weight="500">Document</text>
-        <text x="65" y="162" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">PDF / TXT</text>
-        <text x="65" y="177" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">DOCX etc.</text>
-
-        <!-- doc → chunker -->
-        <line x1="120" y1="150" x2="168" y2="150" stroke="#f5a623" stroke-width="1.5" marker-end="url(#arr-a)"/>
-
-        <!-- ── CHUNKER ── -->
-        <rect x="170" y="115" width="110" height="70" rx="5" fill="#111520" stroke="#f5a623" stroke-width="1.5"/>
-        <text x="225" y="144" text-anchor="middle" font-family="DM Mono" font-size="12" fill="#f5a623">Chunker</text>
-        <text x="225" y="162" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Semantic</text>
-        <text x="225" y="177" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">splitting</text>
-
-        <!-- chunker forks: up to vector track, down to graph track -->
-        <line x1="280" y1="140" x2="318" y2="90" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#arr-t)"/>
-        <line x1="280" y1="162" x2="318" y2="218" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arr-p)"/>
-
-        <!-- ═══ VECTOR TRACK (top) ═══ -->
-        <!-- label -->
-        <text x="330" y="24" font-family="DM Mono" font-size="10" fill="#2dd4bf" opacity="0.7" letter-spacing="2">VECTOR TRACK</text>
-        <line x1="330" y1="28" x2="920" y2="28" stroke="#2dd4bf" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.3"/>
-
-        <!-- BGE Embedder -->
-        <rect x="320" y="55" width="130" height="70" rx="5" fill="#111520" stroke="#2dd4bf" stroke-width="1.5"/>
-        <text x="385" y="80" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#2dd4bf">BGE Embedder</text>
-        <text x="385" y="97" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">bge-large-en</text>
-        <text x="385" y="112" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">1024 dims</text>
-
-        <!-- BGE → Qdrant -->
-        <line x1="450" y1="90" x2="498" y2="90" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#arr-t)"/>
-
-        <!-- Qdrant -->
-        <rect x="500" y="55" width="130" height="70" rx="5" fill="#111520" stroke="#2dd4bf" stroke-width="2"/>
-        <text x="565" y="80" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#2dd4bf" font-weight="500">Qdrant</text>
-        <text x="565" y="97" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Vector store</text>
-        <text x="565" y="112" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">cosine · HNSW</text>
-
-        <!-- Qdrant → stored badge -->
-        <line x1="630" y1="90" x2="678" y2="90" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#arr-t)"/>
-        <rect x="680" y="68" width="110" height="44" rx="20" fill="#2dd4bf22" stroke="#2dd4bf" stroke-width="1"/>
-        <text x="735" y="86" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#2dd4bf">Chunks +</text>
-        <text x="735" y="101" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#2dd4bf">Vectors stored</text>
-
-        <!-- ═══ GRAPH TRACK (bottom) ═══ -->
-        <text x="330" y="200" font-family="DM Mono" font-size="10" fill="#a78bfa" opacity="0.7" letter-spacing="2">GRAPH TRACK</text>
-        <line x1="330" y1="204" x2="920" y2="204" stroke="#a78bfa" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.3"/>
-
-        <!-- LLM Entity Extractor -->
-        <rect x="320" y="215" width="130" height="70" rx="5" fill="#111520" stroke="#a78bfa" stroke-width="1.5"/>
-        <text x="385" y="238" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#a78bfa">LLM Extractor</text>
-        <text x="385" y="255" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Entities +</text>
-        <text x="385" y="270" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Relations</text>
-
-        <!-- Extractor → Rel inference -->
-        <line x1="450" y1="250" x2="498" y2="250" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arr-p)"/>
-
-        <!-- Rel Inference -->
-        <rect x="500" y="215" width="130" height="70" rx="5" fill="#111520" stroke="#a78bfa" stroke-width="1.5"/>
-        <text x="565" y="238" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#a78bfa">Rel. Inference</text>
-        <text x="565" y="255" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Triple builder</text>
-        <text x="565" y="270" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">(A)–[R]→(B)</text>
-
-        <!-- Rel inference → Neo4j -->
-        <line x1="630" y1="250" x2="678" y2="250" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arr-p)"/>
-
-        <!-- Neo4j -->
-        <rect x="680" y="215" width="130" height="70" rx="5" fill="#111520" stroke="#4ade80" stroke-width="2"/>
-        <text x="745" y="238" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#4ade80" font-weight="500">Neo4j</text>
-        <text x="745" y="255" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Graph store</text>
-        <text x="745" y="270" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Cypher · ACID</text>
-
-        <!-- Neo4j → stored badge -->
-        <line x1="810" y1="250" x2="848" y2="250" stroke="#4ade80" stroke-width="1.5" marker-end="url(#arr-g)"/>
-        <rect x="850" y="228" width="82" height="44" rx="20" fill="#4ade8022" stroke="#4ade80" stroke-width="1"/>
-        <text x="891" y="246" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#4ade80">Nodes +</text>
-        <text x="891" y="261" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#4ade80">Edges stored</text>
-
-        <!-- cross-link: vector chunks reference graph entities -->
-        <path d="M 735 215 Q 735 160 650 140 Q 620 130 630 112" stroke="#f5a623" stroke-width="1" stroke-dasharray="5,3" fill="none" opacity="0.4" marker-end="url(#arr-a)"/>
-        <text x="718" y="173" font-family="DM Mono" font-size="9" fill="#f5a623" opacity="0.6">entity_refs</text>
-        <text x="718" y="185" font-family="DM Mono" font-size="9" fill="#f5a623" opacity="0.6">cross-linked</text>
-      </svg>
-    </div>
-
-    <!-- legend -->
-    <div style="display:flex;gap:2rem;font-size:0.8125rem;color:var(--text-dim);margin-top:0.6rem;">
-      <span><span style="color:#2dd4bf;">━</span> Vector track → Qdrant</span>
-      <span><span style="color:#a78bfa;">━</span> Graph track → Neo4j</span>
-      <span><span style="color:#f5a623;opacity:0.6;">╌</span> Cross-link: chunks carry entity refs</span>
-    </div>
-  </div>
-
-  <!-- SLIDE 14: QUERY PIPELINE -->
-  <div class="slide" id="s13">
-    <div class="label">13 — Tech Internals · Query Pipeline</div>
-    <h2>One query.<br><em>Two retrievers.</em> One answer.</h2>
-
-    <div style="width:100%;max-width:940px;margin-top:1.4rem;">
-      <svg viewBox="0 0 940 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;overflow:visible;">
-        <defs>
-          <marker id="qa" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#f5a623" opacity="0.8"/></marker>
-          <marker id="qt" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#2dd4bf" opacity="0.8"/></marker>
-          <marker id="qp" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#a78bfa" opacity="0.8"/></marker>
-          <marker id="qg" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#4ade80" opacity="0.8"/></marker>
-          <marker id="qo" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#f87171" opacity="0.8"/></marker>
-        </defs>
-
-        <!-- USER QUERY -->
-        <rect x="8" y="118" width="112" height="70" rx="5" fill="#111520" stroke="#f5a623" stroke-width="2"/>
-        <text x="64" y="144" text-anchor="middle" font-family="DM Mono" font-size="11.5" fill="#f5a623" font-weight="500">User Query</text>
-        <text x="64" y="162" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">"What are the</text>
-        <text x="64" y="177" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">retry rules?"</text>
-
-        <!-- query → BGE embed -->
-        <line x1="120" y1="153" x2="168" y2="153" stroke="#f5a623" stroke-width="1.5" marker-end="url(#qa)"/>
-
-        <!-- BGE EMBED (query) -->
-        <rect x="170" y="118" width="120" height="70" rx="5" fill="#111520" stroke="#f5a623" stroke-width="1.5"/>
-        <text x="230" y="144" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#f5a623">BGE Embed</text>
-        <text x="230" y="162" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Query →</text>
-        <text x="230" y="177" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">1024-dim vec</text>
-
-        <!-- embed forks up/down -->
-        <line x1="290" y1="138" x2="328" y2="88" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#qt)"/>
-        <line x1="290" y1="170" x2="328" y2="228" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#qp)"/>
-
-        <!-- ═══ VECTOR PATH ═══ -->
-        <text x="340" y="22" font-family="DM Mono" font-size="10" fill="#2dd4bf" opacity="0.7" letter-spacing="2">VECTOR PATH — QDRANT</text>
-        <line x1="340" y1="27" x2="700" y2="27" stroke="#2dd4bf" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.3"/>
-
-        <!-- Qdrant ANN search -->
-        <rect x="330" y="50" width="135" height="70" rx="5" fill="#111520" stroke="#2dd4bf" stroke-width="1.5"/>
-        <text x="397" y="75" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#2dd4bf">Qdrant ANN</text>
-        <text x="397" y="92" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Top-K cosine</text>
-        <text x="397" y="107" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">similar chunks</text>
-
-        <!-- Qdrant → results bubble -->
-        <line x1="465" y1="85" x2="503" y2="85" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#qt)"/>
-        <rect x="505" y="62" width="110" height="46" rx="5" fill="#2dd4bf15" stroke="#2dd4bf" stroke-width="1"/>
-        <text x="560" y="82" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#2dd4bf">Semantic</text>
-        <text x="560" y="97" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#2dd4bf">chunk hits</text>
-
-        <!-- ═══ GRAPH PATH ═══ -->
-        <text x="340" y="212" font-family="DM Mono" font-size="10" fill="#a78bfa" opacity="0.7" letter-spacing="2">GRAPH PATH — NEO4J</text>
-        <line x1="340" y1="217" x2="700" y2="217" stroke="#a78bfa" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.3"/>
-
-        <!-- Cypher query builder -->
-        <rect x="330" y="228" width="135" height="70" rx="5" fill="#111520" stroke="#a78bfa" stroke-width="1.5"/>
-        <text x="397" y="251" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#a78bfa">Cypher Query</text>
-        <text x="397" y="268" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">MATCH (n)-</text>
-        <text x="397" y="283" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">[r]→(m)</text>
-
-        <!-- Cypher → results bubble -->
-        <line x1="465" y1="263" x2="503" y2="263" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#qp)"/>
-        <rect x="505" y="240" width="110" height="46" rx="5" fill="#a78bfa15" stroke="#a78bfa" stroke-width="1"/>
-        <text x="560" y="260" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#a78bfa">Graph hops</text>
-        <text x="560" y="275" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#a78bfa">context</text>
-
-        <!-- both results converge to reranker -->
-        <line x1="615" y1="85" x2="658" y2="148" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#qt)"/>
-        <line x1="615" y1="263" x2="658" y2="180" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#qp)"/>
-
-        <!-- RERANKER -->
-        <rect x="660" y="128" width="120" height="70" rx="5" fill="#111520" stroke="#4ade80" stroke-width="2"/>
-        <text x="720" y="153" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#4ade80" font-weight="500">Reranker</text>
-        <text x="720" y="170" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">BGE reranker</text>
-        <text x="720" y="185" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">fused context</text>
-
-        <!-- reranker → LLM -->
-        <line x1="780" y1="163" x2="818" y2="163" stroke="#4ade80" stroke-width="1.5" marker-end="url(#qg)"/>
-
-        <!-- LLM -->
-        <rect x="820" y="128" width="110" height="70" rx="5" fill="#111520" stroke="#f87171" stroke-width="2"/>
-        <text x="875" y="153" text-anchor="middle" font-family="DM Mono" font-size="11" fill="#f87171" font-weight="500">LLM</text>
-        <text x="875" y="170" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">Internal proxy</text>
-        <text x="875" y="185" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#718096">OpenAI-compat</text>
-
-        <!-- LLM → answer (below) -->
-        <line x1="875" y1="198" x2="875" y2="238" stroke="#f87171" stroke-width="1.5" marker-end="url(#qo)"/>
-        <rect x="822" y="240" width="106" height="44" rx="20" fill="#f8717122" stroke="#f87171" stroke-width="1"/>
-        <text x="875" y="259" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#f87171">Answer</text>
-        <text x="875" y="274" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#f87171">grounded</text>
-      </svg>
-    </div>
-
-    <div style="display:flex;gap:2rem;font-size:0.8125rem;color:var(--text-dim);margin-top:0.5rem;">
-      <span><span style="color:#2dd4bf;">━</span> Vector path: semantic similarity</span>
-      <span><span style="color:#a78bfa;">━</span> Graph path: relationship traversal</span>
-      <span><span style="color:#4ade80;">━</span> Reranker fuses both</span>
-      <span><span style="color:#f87171;">━</span> LLM generates grounded answer</span>
-    </div>
-  </div>
-
-  <!-- SLIDE 15: DATA MODEL -->
-  <div class="slide" id="s14">
-    <div class="label">14 — Tech Internals · Data Model</div>
-    <h2>What actually lives in<br><em>Neo4j</em> and <em>Qdrant</em></h2>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;width:100%;max-width:940px;margin-top:1.2rem;">
-
-      <!-- NEO4J PANEL -->
-      <div style="background:var(--surface);border:1px solid rgba(74,222,128,0.2);border-top:2px solid #4ade80;border-radius:4px;padding:1.2rem;">
-        <div style="font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#4ade80;margin-bottom:0.9rem;">Neo4j — Graph Store</div>
-
-        <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.4rem;">Node Labels</div>
-        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:1rem;">
-          <span style="background:#4ade8018;border:1px solid #4ade8040;color:#4ade80;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">:Document</span>
-          <span style="background:#4ade8018;border:1px solid #4ade8040;color:#4ade80;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">:Entity</span>
-          <span style="background:#4ade8018;border:1px solid #4ade8040;color:#4ade80;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">:Concept</span>
-          <span style="background:#4ade8018;border:1px solid #4ade8040;color:#4ade80;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">:Chunk</span>
-        </div>
-
-        <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.4rem;">Relationship Types</div>
-        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:1rem;">
-          <span style="background:#a78bfa18;border:1px solid #a78bfa40;color:#a78bfa;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">MENTIONS</span>
-          <span style="background:#a78bfa18;border:1px solid #a78bfa40;color:#a78bfa;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">RELATED_TO</span>
-          <span style="background:#a78bfa18;border:1px solid #a78bfa40;color:#a78bfa;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">PART_OF</span>
-          <span style="background:#a78bfa18;border:1px solid #a78bfa40;color:#a78bfa;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:3px;">DEPENDS_ON</span>
-        </div>
-
-        <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.5rem;">Sample Cypher Query</div>
-        <div style="background:#0a0c10;border:1px solid rgba(255,255,255,0.06);border-radius:3px;padding:0.8rem;font-size:0.7rem;line-height:1.9;">
-          <span style="color:#a78bfa;">MATCH</span> <span style="color:#e2e8f0;">(e:Entity)</span><span style="color:#718096;">-</span><span style="color:#f5a623;">[r:RELATED_TO]</span><span style="color:#718096;">-&gt;</span><span style="color:#e2e8f0;">(c:Concept)</span><br>
-          <span style="color:#a78bfa;">WHERE</span> <span style="color:#4ade80;">e.name</span> <span style="color:#f5a623;">=</span> <span style="color:#2dd4bf;">"IMS"</span><br>
-          <span style="color:#a78bfa;">RETURN</span> <span style="color:#4ade80;">e, r, c</span><br>
-          <span style="color:#a78bfa;">LIMIT</span> <span style="color:#f5a623;">10</span>
-        </div>
-      </div>
-
-      <!-- QDRANT PANEL -->
-      <div style="background:var(--surface);border:1px solid rgba(45,212,191,0.2);border-top:2px solid #2dd4bf;border-radius:4px;padding:1.2rem;">
-        <div style="font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#2dd4bf;margin-bottom:0.9rem;">Qdrant — Vector Store</div>
-
-        <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.4rem;">Collection Config</div>
-        <div style="background:#0a0c10;border:1px solid rgba(255,255,255,0.06);border-radius:3px;padding:0.8rem;font-size:0.7rem;line-height:1.9;margin-bottom:1rem;">
-          <span style="color:#718096;">collection: </span><span style="color:#2dd4bf;">"rag_chunks"</span><br>
-          <span style="color:#718096;">vector_size: </span><span style="color:#f5a623;">1024</span><br>
-          <span style="color:#718096;">distance: </span><span style="color:#4ade80;">Cosine</span><br>
-          <span style="color:#718096;">index: </span><span style="color:#a78bfa;">HNSW</span>  <span style="color:#4a5568;">// fast ANN</span>
-        </div>
-
-        <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.4rem;">Payload (Metadata) Schema</div>
-        <div style="background:#0a0c10;border:1px solid rgba(255,255,255,0.06);border-radius:3px;padding:0.8rem;font-size:0.7rem;line-height:1.9;">
-          <span style="color:#718096;">doc_id: </span><span style="color:#2dd4bf;">"ltesms_v25"</span><br>
-          <span style="color:#718096;">chunk_id: </span><span style="color:#f5a623;">"chunk_042"</span><br>
-          <span style="color:#718096;">text: </span><span style="color:#2dd4bf;">"The device shall..."</span><br>
-          <span style="color:#718096;">entity_refs: </span><span style="color:#a78bfa;">["IMS", "DUT", "SIP"]</span><br>
-          <span style="color:#718096;">neo4j_ids: </span><span style="color:#4ade80;">[4821, 4822, 4830]</span>
-        </div>
-      </div>
-    </div>
-
-    <p style="font-size:0.8125rem;color:var(--text-dim);text-align:center;margin-top:0.9rem;">
-      The <span style="color:#f5a623;">entity_refs</span> and <span style="color:#f5a623;">neo4j_ids</span> fields are the bridge — vector chunks know which graph nodes they came from, enabling cross-store joins at query time.
-    </p>
-  </div>
-
-  <!-- SLIDE 16: CLOSING -->
+  <!-- SLIDE 17: CLOSING -->
   <div class="slide" id="s11">
     <div class="label">Knowledge Graphs — 2026</div>
     <h1>The <em>bottleneck</em><br>is gone.</h1>
@@ -1163,12 +1318,12 @@
 <div class="nav">
   <button id="prev" onclick="navigate(-1)">←</button>
   <div class="nav-dots" id="dots"></div>
-  <span class="slide-counter" id="counter">1 / 16</span>
+  <span class="slide-counter" id="counter">1 / 17</span>
   <button id="next" onclick="navigate(1)">→</button>
 </div>
 
 <script>
-  const total = 16;
+  const total = 19;
   let current = 0;
 
   const dotsEl = document.getElementById('dots');
@@ -1205,7 +1360,7 @@
       d.classList.toggle('active', i === current);
     });
 
-    counterEl.textContent = (current + 1) + ' / 16';
+    counterEl.textContent = (current + 1) + ' / 19';
     progressEl.style.width = ((current + 1) / total * 100) + '%';
     prevBtn.disabled = current === 0;
     nextBtn.disabled = current === total - 1;

@@ -17,3 +17,6 @@ desktop.ini
 
 # Node (if any scripts)
 node_modules/
+
+# Planning artifacts
+plan.md

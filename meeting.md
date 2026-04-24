@@ -1,0 +1,2 @@
+Body:
+We'll walk through why knowledge graphs matter now, what they actually do & show you live examples from our own documents. One of the biggest workflows common across every enterprise is getting the data you need at a single click — it sounds as easy as googling, but there's a lot of complexity behind it. This is what we'll uncover, through the lens of knowledge graphs. Whether you code or not, this will surface helpful insights about how we build things.

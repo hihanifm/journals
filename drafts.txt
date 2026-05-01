@@ -1,3 +1,32 @@
+lens-rag-api       |   d2 = df.ffill().dropna(how="all")
+lens-rag-api       | 05:57:24 [DEBUG] lens.ingestion: read_excel() path=/tmp/tmpi7897cb_.xlsx
+lens-rag-api       | 05:57:24 [DEBUG] lens.ingestion: read_excel() sheets=['Sheet1']
+lens-rag-api       | /app/ingestion.py:34: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+lens-rag-api       |   df = df.ffill()
+lens-rag-api       | 05:57:24 [DEBUG] lens.ingestion:   sheet='Sheet1' rows_before=15 rows_after=15 cols=['Test Case Title', 'Test ID', 'Description', 'Applicability', 'Steps', 'Expected Results', 'Source File', 'sheet_name']
+lens-rag-api       | 05:57:24 [INFO] lens.ingestion: read_excel() total_rows=15 columns=['Test Case Title', 'Test ID', 'Description', 'Applicability', 'Steps', 'Expected Results', 'Source File'] elapsed_ms=23
+lens-rag-api       | INFO:     172.20.0.4:54300 - "POST /compare/preview-column-samples HTTP/1.1" 200 OK
+lens-rag-api       | /app/ingestion.py:62: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+lens-rag-api       |   d2 = df.ffill().dropna(how="all")
+lens-rag-api       | 05:57:24 [DEBUG] lens.ingestion: read_excel() path=/tmp/tmpi7897cb_.xlsx
+lens-rag-api       | 05:57:24 [DEBUG] lens.ingestion: read_excel() sheets=['Sheet1']
+lens-rag-api       | /app/ingestion.py:34: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+lens-rag-api       |   df = df.ffill()
+lens-rag-api       | 05:57:24 [DEBUG] lens.ingestion:   sheet='Sheet1' rows_before=15 rows_after=15 cols=['Test Case Title', 'Test ID', 'Description', 'Applicability', 'Steps', 'Expected Results', 'Source File', 'sheet_name']
+lens-rag-api       | 05:57:24 [INFO] lens.ingestion: read_excel() total_rows=15 columns=['Test Case Title', 'Test ID', 'Description', 'Applicability', 'Steps', 'Expected Results', 'Source File'] elapsed_ms=20
+lens-rag-api       | INFO:     172.20.0.4:54306 - "POST /compare/preview-row-stats HTTP/1.1" 200 OK
+lens-rag-api       | INFO:     172.20.0.4:56058 - "GET /health HTTP/1.1" 200 OK
+lens-rag-api       | INFO:     172.20.0.4:47712 - "GET /health HTTP/1.1" 200 OK
+lens-rag-api       | INFO:     172.20.0.4:52510 - "GET /health HTTP/1.1" 200 OK
+lens-rag-api       | INFO:     172.20.0.4:52524 - "GET /health HTTP/1.1" 200 OK
+
+
+
+
+
+
+
+
 cd /Users/hanifm/work/lens-rag/backend && (command -v python3.11 && python3.11 -m venv .venv311 && .venv311/bin/pip install -q -r requirements.txt && .venv311/bin/python << 'PY'
 from starlette.testclient import TestClient
 from unittest.mock import patch

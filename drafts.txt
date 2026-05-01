@@ -1,2 +1,7 @@
+curl -s -o /dev/null -w "%{http_code}\n" -X POST \
+  "http://127.0.0.1:37002/compare/preview-row-stats" \
+  -H "Content-Type: application/json" \
+  -d '{"tmp_path":"/no/such/file","sheet_name":null,"row_filters":[]}'
+
 
 hi

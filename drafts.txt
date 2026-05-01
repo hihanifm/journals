@@ -1,3 +1,20 @@
+cd /Users/hanifm/work/lens-rag/backend && (command -v python3.11 && python3.11 -m venv .venv311 && .venv311/bin/pip install -q -r requirements.txt && .venv311/bin/python << 'PY'
+from starlette.testclient import TestClient
+from unittest.mock import patch
+with patch('main.init_db'), patch('main.migrate_legacy_compare_jobs'):
+    from main import app
+post_compare = [getattr(r,'path',None) for r in app.routes if getattr(r,'methods',None) and 'POST' in r.methods and str(getattr(r,'path','')).startswith('/compare')]
+print('count POST /compare', len(post_compare))
+for p in post_compare:
+    if 'preview' in p:
+        print(' ', p)
+client = TestClient(app)
+r = client.post('/compare/preview-row-stats', json={'tmp_path': '/no/such', 'sheet_name': None, 'row_filters': []})
+print('preview-row-stats', r.status_code, r.headers.get('allow'))
+PY
+) || echo 'no python3.11'
+
+
 curl -s -o /dev/null -w "%{http_code}\n" -X POST \
   "http://127.0.0.1:37002/compare/preview-row-stats" \
   -H "Content-Type: application/json" \

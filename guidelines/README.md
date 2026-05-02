@@ -10,7 +10,7 @@ Single home for project-agnostic engineering guidelines pulled out of individual
 | [bottom-bar-guidelines.md](./bottom-bar-guidelines.md) | Fixed bottom status bar pattern for SPAs (env, API health, version, links) — matches LENS `BottomBar.jsx` + `Layout.jsx`.  | lens-rag       |
 | [docker-lab-guidelines.md](./docker-lab-guidelines.md) | Predictable Docker Compose workflow for lab environments: dev/prod profiles, proxy args, single-origin browser traffic.    | lens-rag       |
 | [excel-guidelines.md](./excel-guidelines.md)           | Reliable Excel ingest/export for RAG/ETL pipelines: text-first reads, merged-cell handling, pitfalls.                      | lens-rag       |
-| [github-guidelines.md](./github-guidelines.md)         | Safe git workflow when you have a public OSS upstream and a private origin mirror.                                         | lens-ragas-web |
+| [github-guidelines.md](./github-guidelines.md)         | Safe git workflow when you have a public OSS upstream and a private origin mirror; scripts live under [`skills/github-public-private-workflow/`](../skills/github-public-private-workflow/). | lens-ragas-web |
 | [ollama-guidelines.md](./ollama-guidelines.md)         | Guardrails for Ollama from Dockerized backends: base URL normalization, the localhost-in-container trap, preflight checks. | lens-ragas-web |
 
 

@@ -10,9 +10,9 @@ Single home for project-agnostic engineering guidelines pulled out of individual
 | [bottom-bar-guidelines.md](./bottom-bar-guidelines.md) | Fixed bottom status bar pattern for SPAs (env, API health, version, links) — matches LENS `BottomBar.jsx` + `Layout.jsx`.  | lens-rag       |
 | [docker-lab-guidelines.md](./docker-lab-guidelines.md) | Predictable Docker Compose workflow for lab environments: dev/prod profiles, proxy args, single-origin browser traffic.    | lens-rag       |
 | [excel-guidelines.md](./excel-guidelines.md)           | Reliable Excel ingest/export for RAG/ETL pipelines: text-first reads, merged-cell handling, pitfalls.                      | lens-rag       |
-| [github-guidelines.md](./github-guidelines.md)         | Safe git workflow when you have a public OSS upstream and a private origin mirror; scripts live under [`skills/github-public-private-workflow/`](../skills/github-public-private-workflow/). | lens-ragas-web |
 | [ollama-guidelines.md](./ollama-guidelines.md)         | Guardrails for Ollama from Dockerized backends: base URL normalization, the localhost-in-container trap, preflight checks. | lens-ragas-web |
 
+**Git / GitHub (public upstream + private mirror)** lives only under [`../skills/github-public-private-workflow/`](../skills/github-public-private-workflow/) (skill + scripts), not in this folder.
 
 ## How this folder is used
 
@@ -34,8 +34,8 @@ lens-ragas-web/guidelines  -> ../journals/guidelines
 
 ## Adding a new one
 
-1. Drop the new `.md` into this folder using the kebab-case naming.
-2. Add a row to the table above.
+1. Drop the new `.md` into this folder using the kebab-case naming (or add a versioned skill under [`../skills/`](../skills/) if it ships scripts / belongs beside automation — avoid duplicating the same topic in both places).
+2. Add a row to the table above (or a one-line pointer under the Git / GitHub example, if applicable).
 3. If the guideline originated in a specific project, the existing `guidelines/` symlink already exposes it there — nothing else to wire up.
 4. If a *new* project should see this folder, add a symlink:
 

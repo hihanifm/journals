@@ -3,7 +3,7 @@
 ## name: github-public-upstream-private-origin
 
 description: Safe git workflow for OSS upstream + private mirror (disable public pushes, sync via public-main/private-main)
-version: 1.0
+version: 1.1
 applies_to: ["git", "github", "release-workflow"]
 rules:
 
@@ -12,6 +12,7 @@ rules:
 - Only push to origin (private/internal)
 - Prefer working on private-main or branches from it
 - Before any push, run `git where` and verify remotes
+- Optional belt-and-suspenders: global `url.*.pushInsteadOf` to dead-url block `github.com` pushes, plus global `pre-push` for a clear error (verify with `git config --global --list | grep -E 'pushInsteadOf|hooksPath'`)
 usage:
 - Run the one-time setup script from repo root
 - Use aliases: pub-pull, priv-pull, priv-push
@@ -31,6 +32,72 @@ Use this workflow when you develop a project **open source** on public GitHub, b
 - Before any push: run `git where` and verify:
   - `origin` is **not** `github.com`
   - `upstream` push URL is **DISABLED**
+
+---
+
+## Global enforcement: block accidental github.com pushes
+
+Per-repo setup (disabled upstream push URL, `origin` on internal host) still leaves room for a wrong remote or a fresh clone aimed at public GitHub. These **global** Git settings add a hard guardrail.
+
+### Option 1: `pushInsteadOf` — redirect to a dead URL
+
+Pure Git config; no hooks. Redirects pushes whose URL scheme matches public GitHub (HTTPS or SSH) to a bogus URL so the push fails at connect time.
+
+```bash
+git config --global url."BLOCKED://no-push/".pushInsteadOf "https://github.com/"
+git config --global url."BLOCKED://no-push/".pushInsteadOf "git@github.com:"
+```
+
+**Result:** pushes to those URLs fail with an error such as `fatal: unable to connect to BLOCKED://no-push/`.
+
+### Option 2: Global `pre-push` hook — custom message
+
+Use when you want a **clear, human-readable** refusal before any network attempt.
+
+Set a global hooks directory (applies to every repo unless that repo overrides `core.hooksPath`):
+
+```bash
+git config --global core.hooksPath ~/.git-global-hooks
+mkdir -p ~/.git-global-hooks
+```
+
+Create `~/.git-global-hooks/pre-push`:
+
+```bash
+cat > ~/.git-global-hooks/pre-push << 'EOF'
+#!/usr/bin/env bash
+remote_url=$(git remote get-url "$1" 2>/dev/null)
+if echo "$remote_url" | grep -q "github.com"; then
+  echo ""
+  echo "BLOCKED: Push to github.com is not allowed from this environment."
+  echo "Are you trying to push to your internal repo instead?"
+  echo ""
+  exit 1
+fi
+EOF
+chmod +x ~/.git-global-hooks/pre-push
+```
+
+**Bypass:** `git push --no-verify` skips hooks.
+
+### Comparison
+
+| | `pushInsteadOf` | Global `pre-push` |
+|---|---|---|
+| Setup effort | Two config lines | Hook file + `hooksPath` |
+| Custom error message | No (transport error) | Yes |
+| Applies across repos | Yes | Yes |
+| Easy bypass | Harder | `--no-verify` |
+
+### Recommendation
+
+Use **both**: `pushInsteadOf` as the hard block, global `pre-push` for an explanatory message.
+
+### Verify
+
+```bash
+git config --global --list | grep -E "pushInsteadOf|hooksPath"
+```
 
 ---
 
@@ -277,6 +344,7 @@ git priv-push
 - Prefer working from `**private-main**` for any changes that will be pushed.
 - Treat public GitHub as **read-only** in this clone.
 - Before pushing, run `git where` and confirm `upstream` push URL is `DISABLED`.
+- Where policy allows, maintain global `pushInsteadOf` + global `pre-push` as in [Global enforcement](#global-enforcement-block-accidental-githubcom-pushes); do not use `--no-verify` to bypass safety hooks unless explicitly instructed.
 
 ## Examples (copy/paste)
 

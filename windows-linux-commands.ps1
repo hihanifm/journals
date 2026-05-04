@@ -7,9 +7,10 @@ function ll { Get-ChildItem -Force }
 function la { Get-ChildItem -Force }
 function l { Get-ChildItem }
 
-function .. { Set-Location .. }
-function ... { Set-Location ../.. }
-function cd.. { Set-Location .. }
+# Names must be quoted: unquoted .. / ... are operators and break parsing.
+function '..' { Set-Location .. }
+function '...' { Set-Location ../.. }
+function 'cd..' { Set-Location .. }
 
 function pwd { Get-Location }
 
@@ -71,8 +72,9 @@ function ifconfig { Get-NetIPAddress }
 function ip { Get-NetIPAddress }
 
 function ping {
-    param($host)
-    Test-Connection $host
+    # $Host is automatic; do not use $host as a parameter name.
+    param([Parameter(Mandatory = $true, Position = 0)][string] $ComputerName)
+    Test-Connection $ComputerName
 }
 
 # ---------- Git ----------

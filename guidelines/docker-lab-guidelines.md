@@ -1,230 +1,193 @@
 ---
+name: docker-lab-guidelines
+description: >-
+  Guides Docker Compose + Makefile setup for web apps (frontend + backend API + database)
+  in lab environments with proxies, restricted egress, or mixed Mac/Linux dev teams.
+  Use when scaffolding a new project, adding offline build support, fixing proxy issues,
+  or setting up a dev/prod workflow with a predictable Makefile interface.
+---
 
-## name: docker-lab
+# Docker Lab Compose Guidelines
 
-description: Enforces a predictable, proxy-friendly Docker Compose dev/prod workflow for lab environments.
-version: 1.0
-applies_to: ["docker", "docker-compose", "compose", "lab", "proxy", "pip", "npm", "dev-server", "ports", "profiles", "tmux"]
-rules:
+Use this when building or repairing a Docker Compose workflow for a typical web app in a **lab or enterprise environment** — restricted egress, Docker Hub blocks, mixed Mac/Linux developers, offline builds.
 
-- Always separate dev (FE dev server + API) from prod (single-origin static + API).
-- Always use Compose profiles (or equivalent) to model dev vs prod.
-- Always pass HTTP_PROXY/HTTPS_PROXY/NO_PROXY into Docker builds in restricted egress environments.
-- Always keep browser traffic single-origin in dev (frontend dev server proxies to API).
-- Never assume `docker compose restart` applies code changes; rebuild when code is baked into images.
-usage:
-- Use this guideline when creating or repairing Docker Compose workflows for web apps in lab/proxy environments.
-- Apply by enforcing the port convention, profiles, proxy args, and documenting daily commands + verification checks.
+## When to apply
 
-# SKILL: Docker Lab Compose Guidelines
+- New project needing a `docker-compose.yml` + `Makefile`
+- Existing project where `make build` fails due to proxy or network issues
+- Mac developer hitting arch mismatch with wheels built for Linux
+- Lab machine with no internet access needing offline `pip install`
+- Any project where dev and prod run on the same host
 
-## Purpose
-
-Create a predictable Docker Compose workflow for typical web apps (frontend + backend API + database) that works reliably in lab environments (proxies, restricted egress) and is friendly to non-interactive agents.
+---
 
 ## Non-negotiable rules
 
-- **Always split dev and prod**.
-  - **Dev**: frontend dev server + backend API, separate ports.
-  - **Prod**: single origin/port; frontend is built once and served as static assets.
-- **Always keep dev single-origin for the browser**.
-  - Browser talks to frontend dev server only.
-  - Frontend dev server proxies API routes to backend (avoid CORS complexity).
-- **Always model dev vs prod with Compose profiles** (or separate compose files).
-- **Always use a consistent port convention** so dev + prod can run simultaneously without collisions.
-- **Always pass proxy variables into Docker builds** when the environment might require it.
-  - Support: `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`.
-  - Ensure `NO_PROXY` includes `localhost,127.0.0.1` plus internal hostnames.
-- **Never rely on `restart` to pick up changes**.
-  - If code is baked into images, you must rebuild (`build` + `up`).
+- **Always split dev and prod** — dev server + API on separate ports; prod on a single origin.
+- **Browser talks to the frontend dev server only** — frontend proxies API calls internally; no CORS complexity.
+- **Model dev vs prod with Compose profiles** — `profiles: ["dev"]` / `profiles: ["prod"]`.
+- **Always pass proxy vars into Docker builds** — `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`.
+- **Never rely on `restart` to pick up code changes** — if code is baked into the image, rebuild.
+- **Do not hardcode `platform:` in `docker-compose.yml`** — let Docker build natively for the host arch; pip-cache handles the rest.
+- **`make` (no args) prints help** — `help` is the first target; developers discover all commands there.
+- **Unprefixed Makefile targets are dev** — `make up`, `make build`, `make logs` always target dev.
+- **Prod is always explicit** — `make prod-up`, `make prod-down`, `make prod-logs`; no accidental prod ops.
 
-## Setup (one-time)
+---
 
-### Pick ports (dev + prod can coexist)
+## Port convention
 
-Pick a `BASE_PORT` and use:
+Pick one `BASE_PORT` per project so dev and prod can run simultaneously without collisions:
 
-- **Prod**: `PROD_PORT = BASE_PORT`
-- **Dev UI**: `DEV_UI_PORT = BASE_PORT + 1`
-- **Dev API**: `DEV_API_PORT = BASE_PORT + 2`
+| Purpose  | Port          |
+|----------|---------------|
+| prod     | `BASE_PORT`   |
+| dev UI   | `BASE_PORT+1` |
+| dev API  | `BASE_PORT+2` |
 
-Example:
+Example: `BASE_PORT=37000` → prod `37000`, dev UI `37001`, dev API `37002`.
 
-- `BASE_PORT=37000`
-- prod = `37000`, dev UI = `37001`, dev API = `37002`
+- Keep DB ports **unpublished** (best) or pick a separate range.
+- Different projects on the same host → different `BASE_PORT`.
+- When dev + prod run together: container names must not collide; set `COMPOSE_PROJECT_NAME` to isolate networks.
 
-Notes:
+---
 
-- Prefer keeping DB ports **unpublished** (best). If you must publish, choose a separate range.
-- If multiple projects share a host, allocate a different `BASE_PORT` per project.
+## Implementation
 
-### Compose structure (profiles)
-
-Implement profiles like:
-
-- **dev profile**:
-  - db service(s)
-  - api service (published on `DEV_API_PORT`)
-  - frontend dev server (published on `DEV_UI_PORT`)
-- **prod profile**:
-  - db service(s) (optionally separate volume/name)
-  - api-prod service (published on `PROD_PORT`)
-  - frontend build artifacts mounted into api-prod OR baked into api-prod image
-
-If dev + prod can run at the same time:
-
-- **Never collide published ports**.
-- **Never collide container names** (use distinct names or avoid `container_name`).
-- Optionally set `COMPOSE_PROJECT_NAME` to isolate networks/containers across stacks.
-
-### Proxy-friendly builds (labs)
-
-Always pass proxy variables as **build args** for images that execute networked package managers (`apt`, `pip`, `npm`).
-
-Minimum required behavior:
-
-- If proxy env vars are set on the host, builds should succeed without editing Dockerfiles.
-- If proxy env vars are absent, builds must still work (args default to empty).
-
-### Python offline build pattern: `pip-cache/`
-
-If Docker builds fail during `pip install` due to egress/proxy constraints, use a `pip-cache/` flow:
-
-- Pre-download Linux wheels for the backend requirements into `pip-cache/`.
-- Dockerfile installs from `pip-cache/` first (offline, deterministic).
-- Only fall back to PyPI when `pip-cache/` is empty.
-
-Generic command template (adapt Python version/ABI):
-
-```bash
-pip download \
-  --platform manylinux2014_x86_64 \
-  --python-version 3.11 \
-  --implementation cp \
-  --abi cp311 \
-  --only-binary=:all: \
-  -r backend/requirements.txt \
-  -d pip-cache/
-```
-
-If using an internal mirror, configure pip explicitly:
-
-```bash
-pip config set global.index-url "https://<your-mirror>/simple"
-pip config set global.trusted-host "<your-mirror-host>"
-```
-
-## Daily commands
-
-These are the minimum commands to document in every repo.
-
-### Start dev stack
-
-```bash
-docker compose --profile dev up -d
-```
-
-Verification (non-interactive):
-
-```bash
-docker compose --profile dev ps
-docker compose --profile dev logs --no-color --tail=200
-```
-
-### Rebuild after backend/containerized code changes
-
-If code is baked into images (typical for API):
-
-```bash
-docker compose --profile dev build
-docker compose --profile dev up -d
-```
-
-### Follow logs
-
-Simple:
-
-```bash
-docker compose --profile dev logs -f
-```
-
-Focused (preferred for agents):
-
-```bash
-docker compose --profile dev logs -f <service-name>
-```
-
-Nice (optional; requires tmux):
-
-```bash
-tmux new-session -d -s app-logs "docker compose --profile dev logs -f <api-service>" \; \
-  split-window -h "docker compose --profile dev logs -f <frontend-service>" \; \
-  split-window -v "docker compose --profile dev logs -f <db-service>" \; \
-  select-pane -t 0 \; \
-  attach -t app-logs
-```
-
-### Stop stack
-
-```bash
-docker compose --profile dev down --remove-orphans
-```
-
-## Examples (copy/paste)
-
-### Compose snippets (profiles, ports, proxy args)
-
-Dev API service: pass proxy args + publish `DEV_API_PORT`:
+### Compose structure
 
 ```yaml
 services:
+  # ── dev profile ───────────────────────────────────────────────
   api:
     profiles: ["dev"]
     build:
       context: .
       dockerfile: backend/Dockerfile
       args:
+        PYTHON_IMAGE: ${PYTHON_IMAGE:-public.ecr.aws/docker/library/python:3.11-slim}
         HTTP_PROXY: ${HTTP_PROXY:-}
         HTTPS_PROXY: ${HTTPS_PROXY:-}
         NO_PROXY: ${NO_PROXY:-}
     ports:
-      - "37002:8000" # dev API port (BASE+2 example)
-```
+      - "37002:8000"   # BASE+2
 
-Dev frontend service: publish `DEV_UI_PORT` and proxy to API over the Compose network:
-
-```yaml
-services:
   frontend:
     profiles: ["dev"]
     ports:
-      - "37001:37001" # dev UI port (BASE+1 example)
+      - "37001:37001"  # BASE+1
     environment:
       - VITE_API_PROXY_TARGET=http://api:8000
-```
 
-Prod API service: single port, serve frontend build output:
-
-```yaml
-services:
+  # ── prod profile ──────────────────────────────────────────────
   api-prod:
     profiles: ["prod"]
     ports:
-      - "37000:8000" # prod single origin (BASE example)
+      - "37000:8000"   # BASE
     environment:
       SERVE_FRONTEND: "true"
     volumes:
       - ./frontend/dist:/app/frontend/dist:ro
 ```
 
-### Makefile targets (dev/prod + logs)
+### Base images — registry mirrors
+
+Docker Hub is often blocked in labs. Default to AWS Public ECR (no auth, mirrors Docker Official Images), overridable via `.env`:
+
+```dockerfile
+ARG PYTHON_IMAGE=public.ecr.aws/docker/library/python:3.11-slim
+FROM ${PYTHON_IMAGE}
+```
+
+```yaml
+# docker-compose.yml build args
+args:
+  PYTHON_IMAGE: ${PYTHON_IMAGE:-public.ecr.aws/docker/library/python:3.11-slim}
+  NODE_IMAGE: ${NODE_IMAGE:-public.ecr.aws/docker/library/node:20-bookworm-slim}
+```
+
+### pip-cache — offline Python wheel install
+
+Pre-download wheels into `pip-cache/`; Dockerfile installs offline, falls back to PyPI when cache is empty:
+
+```dockerfile
+COPY pip-cache/ /tmp/pip-cache/
+RUN if [ "$(ls /tmp/pip-cache/*.whl /tmp/pip-cache/*.tar.gz 2>/dev/null)" ]; then \
+      pip install --no-cache-dir --no-index --find-links /tmp/pip-cache -r requirements.txt; \
+    else \
+      pip install --no-cache-dir \
+        --trusted-host pypi.org \
+        --trusted-host pypi.python.org \
+        --trusted-host files.pythonhosted.org \
+        -r requirements.txt; \
+    fi && rm -rf /tmp/pip-cache
+```
+
+Populate the cache with arch detection — one run, correct wheels for the host (arm64 on Mac, x86_64 on lab Linux):
 
 ```makefile
+pip-cache:
+	@ARCH=$$(uname -m); \
+	if [ "$$ARCH" = "arm64" ] || [ "$$ARCH" = "aarch64" ]; then \
+	  PLAT="--platform manylinux_2_17_aarch64 --platform linux_aarch64"; \
+	else \
+	  PLAT="--platform manylinux_2_17_x86_64 --platform manylinux2014_x86_64 --platform linux_x86_64"; \
+	fi; \
+	pip download $$PLAT \
+	  --python-version 3.11 --implementation cp --abi cp311 \
+	  --only-binary=:all: \
+	  -r backend/requirements.txt \
+	  -d pip-cache/
+```
+
+### Makefile
+
+`help` is the first target — `make` alone shows the cheat sheet. All unprefixed targets are dev; prod is always prefixed.
+
+```makefile
+# Quick reference (visible in editors):
+#   make build && make up   — pick up Dockerfile / dependency changes (required after backend edits)
+#   make rebuild            — full --no-cache rebuild + up (after git pull if containers act stale)
+#   make rebuild-api        — API image only (faster when only backend/ changed)
+.PHONY: help up down build rebuild rebuild-api logs logs-api logs-split restart ps \
+        prod-up prod-down prod-logs prod-logs-api pip-cache clean
+
+help:
+	@echo "Dev:"
+	@echo "  make build && make up   Build images + start dev stack"
+	@echo "  make rebuild            Full --no-cache rebuild + up"
+	@echo "  make rebuild-api        Rebuild API image only (faster)"
+	@echo "  make restart            down + up without rebuild"
+	@echo "  make logs               Tail all dev logs"
+	@echo "  make logs-api           Tail API logs only"
+	@echo "  make ps                 Container status"
+	@echo ""
+	@echo "Prod (explicit):"
+	@echo "  make prod-up            Build frontend + start prod stack"
+	@echo "  make prod-down          Stop prod stack"
+	@echo "  make prod-logs          Tail prod logs"
+	@echo ""
+	@echo "Maintenance:"
+	@echo "  make pip-cache          Re-download wheels for offline builds"
+	@echo "  make clean              Remove old containers/volumes; prune images"
+
 up:
 	docker compose --profile dev up -d
 
+down:
+	docker compose --profile dev down --remove-orphans
+
 build:
 	docker compose --profile dev build
+
+rebuild:
+	docker compose --profile dev build --no-cache
+	docker compose --profile dev up -d
+
+rebuild-api:
+	docker compose --profile dev build --no-cache api
+	docker compose --profile dev up -d api
 
 restart:
 	docker compose --profile dev down --remove-orphans
@@ -235,12 +198,75 @@ logs:
 
 logs-api:
 	docker compose --profile dev logs -f api
+
+logs-split:
+	tmux new-session -d -s app-logs "docker compose --profile dev logs -f api" \; \
+	  split-window -h "docker compose --profile dev logs -f frontend" \; \
+	  split-window -v "docker compose --profile dev logs -f db" \; \
+	  select-pane -t 0 \; \
+	  attach -t app-logs
+
+ps:
+	docker compose ps
+
+prod-up: build-frontend
+	docker compose --profile dev down --remove-orphans
+	docker compose --profile prod up -d --build
+
+prod-down:
+	docker compose --profile prod down --remove-orphans
+
+prod-logs:
+	docker compose --profile prod logs -f
+
+prod-logs-api:
+	docker compose --profile prod logs -f api-prod
+
+pip-cache:
+	@ARCH=$$(uname -m); \
+	if [ "$$ARCH" = "arm64" ] || [ "$$ARCH" = "aarch64" ]; then \
+	  PLAT="--platform manylinux_2_17_aarch64 --platform linux_aarch64"; \
+	else \
+	  PLAT="--platform manylinux_2_17_x86_64 --platform manylinux2014_x86_64 --platform linux_x86_64"; \
+	fi; \
+	pip download $$PLAT \
+	  --python-version 3.11 --implementation cp --abi cp311 \
+	  --only-binary=:all: \
+	  -r backend/requirements.txt \
+	  -d pip-cache/
 ```
 
-### Day-2 gotchas checklist (agent-friendly)
+---
 
-- **If changes don’t show up**: rebuild images (don’t just restart).
-- **If the browser hits CORS**: ensure it talks to FE dev server only; FE proxies to API.
-- **If builds fail in lab**: verify proxy args are passed; use `pip-cache/` to avoid PyPI at build time.
-- **If calling host-only services**: document `host.docker.internal` usage and any required `extra_hosts`.
+## Implementation checklist
 
+When scaffolding or reviewing a project against this guideline:
+
+- [ ] `help` is the **first Makefile target**; `make` alone prints it.
+- [ ] Unprefixed targets (`up`, `build`, `logs`) target **dev only**.
+- [ ] Prod targets are **explicitly prefixed** (`prod-up`, `prod-down`, `prod-logs`).
+- [ ] Dev and prod use **separate Compose profiles**.
+- [ ] Ports follow the `BASE`, `BASE+1`, `BASE+2` convention; no collisions.
+- [ ] `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY` passed as **build args**.
+- [ ] Base images default to **AWS Public ECR** mirror, overridable via `.env`.
+- [ ] `pip-cache/` exists, is committed, and is populated for the **correct arch** (`uname -m`).
+- [ ] Dockerfile uses the **offline-first** pip install pattern.
+- [ ] `NO_PROXY` includes `localhost,127.0.0.1` plus any internal hostnames.
+- [ ] Host-only services (e.g. GPU inference) use **`host.docker.internal`** + `extra_hosts`.
+- [ ] **No `platform:` hardcoded** in `docker-compose.yml`.
+
+---
+
+## Anti-patterns
+
+- **Hardcoding `platform: linux/amd64`** — forces emulation on Apple Silicon; unnecessary when pip-cache is arch-aware.
+- **Declaring transitive dependencies in `requirements.txt`** — they may lack a binary wheel for the target platform, breaking `--only-binary=:all:`.
+- **Using `make restart` after backend code changes** — restart skips the build step; stale image silently runs old code.
+- **Committing `.env`** — proxy credentials and secrets must stay local.
+- **Bare `docker compose` commands without `--profile`** — behaves differently across compose versions; always be explicit.
+- **Single port for dev + prod** — impossible to run both simultaneously; debug prod issues without a running dev stack.
+- **Not documenting `make help`** — teams re-discover commands by reading compose files instead of one `make`.
+
+---
+
+*Skill scope: Docker Compose + Makefile workflow for lab/proxy environments. For app-specific configuration (DB schemas, API routes, frontend build steps), compose separately.*

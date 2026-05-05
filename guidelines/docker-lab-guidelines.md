@@ -113,15 +113,19 @@ Pre-download wheels into `pip-cache/`; Dockerfile installs offline, falls back t
 
 ```dockerfile
 COPY pip-cache/ /tmp/pip-cache/
-RUN if [ "$(ls /tmp/pip-cache/*.whl /tmp/pip-cache/*.tar.gz 2>/dev/null)" ]; then \
-      pip install --no-cache-dir --no-index --find-links /tmp/pip-cache -r requirements.txt; \
+# BuildKit cache mount: pip reuses wheels between rebuilds without baking into image layers.
+# If wheels were pre-downloaded (make pip-cache), install fully offline — no network needed.
+# Otherwise fall back to PyPI with trusted-host flags for lab proxy environments.
+RUN --mount=type=cache,target=/root/.cache/pip \
+    if ls /tmp/pip-cache/*.whl /tmp/pip-cache/*.tar.gz 2>/dev/null | grep -q .; then \
+      pip install --no-index --find-links /tmp/pip-cache/ -r requirements.txt; \
     else \
-      pip install --no-cache-dir \
+      pip install \
         --trusted-host pypi.org \
         --trusted-host pypi.python.org \
         --trusted-host files.pythonhosted.org \
         -r requirements.txt; \
-    fi && rm -rf /tmp/pip-cache
+    fi
 ```
 
 Populate the cache with arch detection — one run, correct wheels for the host (arm64 on Mac, x86_64 on lab Linux):

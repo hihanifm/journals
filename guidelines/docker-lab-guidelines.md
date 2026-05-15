@@ -109,14 +109,14 @@ args:
 
 ### pip-cache — offline Python wheel install
 
-Pre-download wheels into `pip-cache/`; Dockerfile installs offline, falls back to PyPI when cache is empty:
+Pre-download wheels into `pip-cache/`; Dockerfile installs offline, falls back to PyPI when cache is empty.
+
+Use `--mount=type=bind` (not `COPY`) to expose `pip-cache/` during the build step. This keeps wheels out of the image layer — the `RUN` layer cache is then only invalidated by `requirements.txt` changes, not by wheel directory changes. Using `COPY pip-cache/` instead creates an image layer that gets busted every time you re-run `make pip-cache`, forcing a full reinstall on the next build even when requirements haven't changed.
 
 ```dockerfile
-COPY pip-cache/ /tmp/pip-cache/
-# BuildKit cache mount: pip reuses wheels between rebuilds without baking into image layers.
-# If wheels were pre-downloaded (make pip-cache), install fully offline — no network needed.
-# Otherwise fall back to PyPI with trusted-host flags for lab proxy environments.
-RUN --mount=type=cache,target=/root/.cache/pip \
+# bind-mount keeps pip-cache/ out of the image layer; RUN cache is only busted
+# by requirements.txt changes, not by wheel directory updates.
+RUN --mount=type=bind,source=pip-cache,target=/tmp/pip-cache \
     if ls /tmp/pip-cache/*.whl /tmp/pip-cache/*.tar.gz 2>/dev/null | grep -q .; then \
       pip install --no-index --find-links /tmp/pip-cache/ -r requirements.txt; \
     else \
@@ -264,6 +264,7 @@ When scaffolding or reviewing a project against this guideline:
 ## Anti-patterns
 
 - **Hardcoding `platform: linux/amd64`** — forces emulation on Apple Silicon; unnecessary when pip-cache is arch-aware.
+- **`COPY pip-cache/ /tmp/pip-cache/` instead of `--mount=type=bind`** — creates an image layer for the wheel directory; any `make pip-cache` run busts that layer and forces a full pip reinstall on the next build even if `requirements.txt` hasn't changed. Use the bind-mount pattern instead.
 - **Declaring transitive dependencies in `requirements.txt`** — they may lack a binary wheel for the target platform, breaking `--only-binary=:all:`.
 - **Using `make restart` after backend code changes** — restart skips the build step; stale image silently runs old code.
 - **Committing `.env`** — proxy credentials and secrets must stay local.
